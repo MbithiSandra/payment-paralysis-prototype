@@ -6,7 +6,7 @@ This repository hosts the source code, datasets, diagrams, and documentation for
 
 **Title:** Ensemble Machine Learning for Reducing the Risk of Payment Paralysis in Kenyan Small and Medium Enterprises: A Decision Support Prototype
 
-**Researcher:** Sandra Minoo Awino (167253)
+**Researcher:** Sandra Minoo Mbithi (167253)
 
 **Supervisor:** Dr Allan Omondi
 
