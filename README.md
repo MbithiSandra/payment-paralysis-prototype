@@ -1,10 +1,10 @@
 # Payment Paralysis Prototype
 
-This repository hosts the source code, datasets, diagrams, and documentation for the final-year Bachelor of Business Information Technology research project at Strathmore University.
+This repository hosts the source code, datasets, diagrams, and documentation for the final-year Bachelor of Business Information Technology IS II project at Strathmore University.
 
 ## Project
 
-**Title:** Ensemble Machine Learning for Reducing the Risk of Payment Paralysis in Kenyan Small and Medium Enterprises: A Decision Support Prototype
+**Title:** Ensemble Machine Learning for Mitigating Payment Paralysis in Kenyan Small and Medium Enterprises: A Decision Support Prototype
 
 **Researcher:** Sandra Minoo Mbithi (167253)
 
@@ -36,7 +36,7 @@ This project builds a decision support prototype that uses ensemble machine lear
 
 ## Repeatability
 
-Access to this repository is provided to promote repeatability of the results. Another researcher should be able to clone the repository, follow the setup instructions, and reproduce the trained models and the working prototype.
+Access to this repository is provided to promote repeatability of the results. Another researcher should be able to clone the repository, follow the setup instructions and reproduce the trained models and the working prototype.
 
 ## License
 
