@@ -216,3 +216,14 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Datasets
+data/raw
+data/processed
+*.csv
+
+# Node
+node_modules
+
+# PHP / Laravel
+vendor
