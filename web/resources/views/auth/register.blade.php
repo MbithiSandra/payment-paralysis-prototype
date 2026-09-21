@@ -2,10 +2,32 @@
     <form method="POST" action="{{ route('register') }}">
         @csrf
 
+                <!-- Enterprise Name -->
+        <div>
+            <x-input-label for="business_name" :value="__('Enterprise name')" />
+            <x-text-input id="business_name" class="block mt-1 w-full" type="text" name="business_name" :value="old('business_name')" required autofocus />
+            <x-input-error :messages="$errors->get('business_name')" class="mt-2" />
+        </div>
+
+        <!-- Enterprise KRA PIN -->
+        <div class="mt-4">
+            <x-input-label for="kra_pin" :value="__('Enterprise KRA PIN')" />
+            <x-text-input id="kra_pin" class="block mt-1 w-full" type="text" name="kra_pin" :value="old('kra_pin')" required />
+            <x-input-error :messages="$errors->get('kra_pin')" class="mt-2" />
+        </div>
+
+        <!-- Sector -->
+        <div class="mt-4">
+            <x-input-label for="sector" :value="__('Sector')" />
+            <x-text-input id="sector" class="block mt-1 w-full" type="text" name="sector" :value="old('sector')" placeholder="e.g. Wholesale, Construction, Agribusiness" />
+            <x-input-error :messages="$errors->get('sector')" class="mt-2" />
+        </div>
+
+
         <!-- Name -->
         <div>
             <x-input-label for="name" :value="__('Name')" />
-            <x-text-input id="name" class="block mt-1 w-full" type="text" name="name" :value="old('name')" required autofocus autocomplete="name" />
+            <x-text-input id="name" class="block mt-1 w-full" type="text" name="name" :value="old('name')" required autocomplete="name" />
             <x-input-error :messages="$errors->get('name')" class="mt-2" />
         </div>
 
