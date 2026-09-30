@@ -227,3 +227,10 @@ node_modules
 
 # PHP / Laravel
 vendor
+
+# Machine Learning
+ml/data/
+ml/models/
+ml/venv/
+*.xls
+*.joblib
