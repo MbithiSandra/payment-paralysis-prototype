@@ -12,7 +12,7 @@ class Client extends Model
 
     protected $fillable = [
         'client_code', 'kra_pin', 'client_name', 'client_kra_pin',
-        'contact_person', 'phone', 'email', 'sector', 'relationship_start_date',
+        'contact_person', 'phone', 'email', 'sector','employees', 'years_in_operation', 'relationship_start_date',
     ];
 
     protected $casts = [

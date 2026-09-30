@@ -42,7 +42,8 @@
                                 @endif
                             </td>
                             <td class="px-4 py-3 text-right whitespace-nowrap">
-                                <a href="{{ route('invoices.edit', $inv) }}" class="text-indigo-600 hover:underline">Edit</a>
+                                <a href="{{ route('invoices.risk', $inv) }}" class="text-emerald-600 hover:underline">Assess risk</a>
+                                <a href="{{ route('invoices.edit', $inv) }}" class="text-indigo-600 hover:underline ml-3">Edit</a>
                                 <form action="{{ route('invoices.destroy', $inv) }}" method="POST" class="inline ml-3"
                                       onsubmit="return confirm('Remove this invoice?')">
                                     @csrf @method('DELETE')
