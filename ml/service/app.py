@@ -77,9 +77,9 @@ class HistoryInvoice(BaseModel):
 
 
 class Client(BaseModel):
-    sector: str
-    employees: int = 0
-    years_in_operation: float = 0.0
+    sector: Optional[str] = None
+    employees: Optional[int] = None
+    years_in_operation: Optional[float] = None
 
 
 class Invoice(BaseModel):
@@ -124,14 +124,15 @@ def _behaviour_features(req: AssessmentRequest, settled: pd.DataFrame) -> pd.Dat
 
 
 def _profile_features(client: Client) -> pd.DataFrame:
-    code = SECTOR_TO_CODE.get(client.sector.strip().lower())
-    if code is None:
-        raise HTTPException(422, f'Unknown sector "{client.sector}". '
-                                 f'Expected one of: {", ".join(sorted(SECTOR_TO_CODE))}')
+    name = (client.sector or '').strip().lower()
+    code = SECTOR_TO_CODE.get(name, SECTOR_TO_CODE['other services'])
     n = client.employees
-    size_band = 0 if n <= 4 else (1 if n <= 20 else (2 if n <= 50 else 3))
-    return pd.DataFrame([{'sector': code,
-                          'is_new_business': int(client.years_in_operation < 2),
+    if n is None:
+        size_band = 1
+    else:
+        size_band = 0 if n <= 4 else (1 if n <= 20 else (2 if n <= 50 else 3))
+    is_new = 1 if client.years_in_operation is None else int(client.years_in_operation < 2)
+    return pd.DataFrame([{'sector': code, 'is_new_business': is_new,
                           'size_band': size_band}])[P_FEATURES]
 
 
