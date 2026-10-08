@@ -33,8 +33,10 @@ class ClientController extends Controller
             'contact_person'          => ['nullable', 'string', 'max:255'],
             'phone'                   => ['nullable', 'string', 'max:20'],
             'email'                   => ['nullable', 'email', 'max:255'],
-            'sector'                  => ['nullable', 'string', 'max:255'],
-            'relationship_start_date' => ['nullable', 'date', 'before_or_equal:today'],
+            'sector'                  => ['nullable', 'string', 'max:255'], 
+            'employees'               => ['nullable', 'integer', 'min:0'],
+            'years_in_operation' => ['nullable', 'numeric', 'min:0', 'max:99'],
+            'employees'          => ['nullable', 'integer', 'min:1', 'max:250'],
         ];
     }
 

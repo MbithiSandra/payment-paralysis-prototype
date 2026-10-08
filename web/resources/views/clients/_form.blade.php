@@ -22,6 +22,24 @@
     </div>
 
     <div>
+    <x-input-label for="years_in_operation" value="Years in operation" />
+    <x-text-input id="years_in_operation" name="years_in_operation" type="number"
+                  step="0.5" min="0" max="99" class="mt-1 block w-full"
+                  :value="old('years_in_operation', $client->years_in_operation ?? '')" />
+    <p class="text-xs text-gray-500 mt-1">How long the client has been trading. Leave blank if unknown.</p>
+    <x-input-error :messages="$errors->get('years_in_operation')" class="mt-2" />
+</div>
+
+<div>
+    <x-input-label for="employees" value="Employee count" />
+    <x-text-input id="employees" name="employees" type="number"
+                  min="1" max="250" class="mt-1 block w-full"
+                  :value="old('employees', $client->employees ?? '')" />
+    <p class="text-xs text-gray-500 mt-1">Roughly how many people the client employs.</p>
+    <x-input-error :messages="$errors->get('employees')" class="mt-2" />
+</div>
+
+    <div>
         <x-input-label for="contact_person" value="Contact person" />
         <x-text-input id="contact_person" name="contact_person" type="text" class="block mt-1 w-full"
                       :value="old('contact_person', $client->contact_person ?? '')" />

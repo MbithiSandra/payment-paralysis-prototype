@@ -10,10 +10,11 @@ class Client extends Model
     protected $keyType = 'string';
     public $incrementing = false;
 
-    protected $fillable = [
-        'client_code', 'kra_pin', 'client_name', 'client_kra_pin',
-        'contact_person', 'phone', 'email', 'sector','employees', 'years_in_operation', 'relationship_start_date',
-    ];
+protected $fillable = [
+    'client_code', 'kra_pin', 'client_name', 'client_kra_pin',
+    'contact_person', 'phone', 'email', 'sector',
+    'relationship_start_date', 'employees', 'years_in_operation',
+];
 
     protected $casts = [
         'relationship_start_date' => 'date',

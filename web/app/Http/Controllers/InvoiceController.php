@@ -32,9 +32,9 @@ class InvoiceController extends Controller
             'client_code'    => ['required', Rule::in($this->clientCodes())],
             'invoice_number' => ['required', 'string', 'max:50', $unique],
             'amount'         => ['required', 'numeric', 'min:0.01'],
-            'issue_date'     => ['required', 'date'],
+            'issue_date'     => ['required', 'date', 'before_or_equal:today'],
             'due_date'       => ['required', 'date', 'after_or_equal:issue_date'],
-            'payment_date'   => ['nullable', 'date', 'after_or_equal:issue_date'],
+            'payment_date'   => ['nullable', 'date', 'after_or_equal:issue_date', 'before_or_equal:today'],
         ];
     }
 
