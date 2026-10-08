@@ -157,7 +157,7 @@
 
         <p class="text-xs text-[color:var(--pg-muted)] px-1">
             Risk tiers come from the machine learning service and refresh every ten minutes.
-            Chance late is the calibrated probability of settling after the due date, not a measure of certainty.
+            Chance late is the calibrated probability of settling after the due date not a measure of certainty.
         </p>
 
         <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>

@@ -1,90 +1,133 @@
 <x-app-layout>
     <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-            {{ __('Risk assessment') }}
-        </h2>
-    </x-slot>
-
-    <div class="py-12">
-        <div class="max-w-3xl mx-auto sm:px-6 lg:px-8 space-y-6">
-
-            @if (session('error'))
-                <div class="bg-red-100 text-red-800 border border-red-300 rounded p-4">
-                    {{ session('error') }}
-                </div>
-            @endif
-
-            <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6 space-y-6 text-gray-900">
-
-                <p class="text-gray-600">
-                    {{ $client->client_name }} &middot; invoice of
+        <div class="flex flex-wrap items-end justify-between gap-4">
+            <div>
+                <h1 class="pg-display text-3xl">Risk assessment</h1>
+                <p class="text-sm text-[color:var(--pg-muted)] mt-1">
+                    {{ $client->client_name }} &middot; invoice {{ $invoice->invoice_number }} of
                     KES {{ number_format($invoice->amount, 2) }}, due {{ $invoice->due_date->format('d M Y') }}
                 </p>
+            </div>
+            <a href="{{ route('invoices.index') }}" class="pg-chip">Back to invoices</a>
+        </div>
+    </x-slot>
 
-                @php
-                    $tierColour = [
-                        'Low' => 'bg-green-100 text-green-800 border-green-300',
-                        'Medium' => 'bg-yellow-100 text-yellow-800 border-yellow-300',
-                        'High' => 'bg-red-100 text-red-800 border-red-300',
-                    ][$assessment['tier']];
-                @endphp
+    <div class="pb-14 pt-8 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 space-y-5">
 
-                <div class="grid grid-cols-3 gap-4">
-                    <div class="border rounded p-4 {{ $tierColour }}">
-                        <div class="text-sm uppercase">Risk tier</div>
-                        <div class="text-3xl font-bold">{{ $assessment['tier'] }}</div>
+        @if (session('status'))
+            <div class="pg-tile pg-tile--sage text-sm">{{ session('status') }}</div>
+        @endif
+        @if (session('error'))
+            <div class="pg-tile pg-tile--clay text-sm">{{ session('error') }}</div>
+        @endif
+
+        @php
+            $slug = strtolower($assessment['tier']);
+        @endphp
+
+        {{-- Verdict --}}
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+            <div class="pg-card-dark lg:col-span-2 p-7">
+                <p class="pg-label" style="color:#8FB3A8">Predicted risk tier</p>
+                <div class="flex items-baseline gap-4 mt-3">
+                    <span class="pg-display text-5xl" style="color:#F2F7F4">{{ $assessment['tier'] }}</span>
+                    <span class="text-sm" style="color:#9DBCB1">
+                        {{ $assessment['confidence'] }}% chance of settling late
+                    </span>
+                </div>
+                <div class="mt-7 pt-5 grid grid-cols-2 gap-4" style="border-top:1px solid #2C5048">
+                    <div>
+                        <p class="pg-label" style="color:#8FB3A8">Model used</p>
+                        <p class="mt-1" style="color:#F2F7F4">{{ ucfirst($assessment['model_used']) }}</p>
                     </div>
-                    <div class="border rounded p-4">
-                        <div class="text-sm uppercase text-gray-500">Chance of paying late</div>
-                        <div class="text-3xl font-bold">{{ $assessment['confidence'] }}%</div>
-                    </div>
-                    <div class="border rounded p-4">
-                        <div class="text-sm uppercase text-gray-500">Settled invoices</div>
-                        <div class="text-3xl font-bold">{{ $assessment['settled_invoices'] }}</div>
+                    <div>
+                        <p class="pg-label" style="color:#8FB3A8">Invoices settled</p>
+                        <p class="mt-1" style="color:#F2F7F4">{{ $assessment['settled_invoices'] }}</p>
                     </div>
                 </div>
+            </div>
 
-                <div class="border rounded p-4 bg-gray-50">
-                    <h3 class="font-semibold mb-1">Recommended action</h3>
-                    <p>{{ $assessment['recommendation'] }}</p>
+            <div class="pg-card p-7">
+                <p class="pg-label">Recommended action</p>
+                <p class="mt-3 text-[15px] leading-relaxed">{{ $assessment['recommendation'] }}</p>
+                @if ($assessment['medium_floor_applied'])
+                    <p class="text-xs text-[color:var(--pg-muted)] mt-4">
+                        Raised to Medium because this client has no settled invoices yet.
+                    </p>
+                @endif
+            </div>
+        </div>
+
+        {{-- Why --}}
+        <div class="pg-card overflow-hidden">
+            <div class="px-7 pt-6 pb-2">
+                <h2 class="pg-display text-xl">Why this tier</h2>
+                <p class="text-sm text-[color:var(--pg-muted)] mt-1">SHAP feature contributions</p>
+            </div>
+            <table class="min-w-full pg-table">
+                <thead><tr><th>Factor</th><th class="text-right">Value</th><th>Effect</th></tr></thead>
+                <tbody>
+                @foreach ($assessment['explanation'] as $reason)
+                    <tr>
+                        <td>{{ $reason['label'] }}</td>
+                        <td class="text-right">{{ round($reason['value'], 2) }}</td>
+                        <td>
+                            <span class="pg-pill {{ $reason['impact'] > 0 ? 'pg-pill--high' : 'pg-pill--low' }}">
+                                {{ $reason['direction'] }}
+                            </span>
+                        </td>
+                    </tr>
+                @endforeach
+                </tbody>
+            </table>
+            <p class="text-xs text-[color:var(--pg-muted)] px-7 py-5">
+                These factors are linked to late payment in the training data. They do not prove cause.
+            </p>
+        </div>
+
+        {{-- Record the decision --}}
+        <div class="pg-card p-7">
+            <h2 class="pg-display text-xl">Record the decision you took</h2>
+            <p class="text-sm text-[color:var(--pg-muted)] mt-1">
+                The system advises. You decide. Give a reason if you go a different way.
+            </p>
+
+            <form method="POST" action="{{ route('decisions.store', $invoice) }}" class="mt-6 space-y-5">
+                @csrf
+                <input type="hidden" name="recommended_tier"   value="{{ $assessment['tier'] }}">
+                <input type="hidden" name="probability_late"   value="{{ $assessment['probability_late'] }}">
+                <input type="hidden" name="model_used"         value="{{ $assessment['model_used'] }}">
+                <input type="hidden" name="recommended_action" value="{{ $assessment['recommendation'] }}">
+
+                <div class="space-y-2">
+                    @foreach (\App\Models\CreditDecision::CHOICES as $value => $label)
+                        <label class="flex items-center gap-3 px-4 py-3 rounded-xl cursor-pointer"
+                               style="border:1px solid var(--pg-line)">
+                            <input type="radio" name="decision" value="{{ $value }}"
+                                   @checked(old('decision') === $value
+                                            || (! old('decision') && \App\Models\CreditDecision::expectedFor($assessment['tier']) === $value))
+                                   style="accent-color: var(--pg-accent)">
+                            <span class="text-sm">{{ $label }}</span>
+                            @if (\App\Models\CreditDecision::expectedFor($assessment['tier']) === $value)
+                                <span class="pg-pill pg-pill--low ml-auto">recommended</span>
+                            @endif
+                        </label>
+                    @endforeach
                 </div>
 
                 <div>
-                    <h3 class="font-semibold mb-2">Why this rating</h3>
-                    <table class="w-full text-sm border">
-                        <thead class="bg-gray-100">
-                            <tr>
-                                <th class="text-left p-2">Factor</th>
-                                <th class="text-right p-2">Value</th>
-                                <th class="text-left p-2">Effect</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                        @foreach ($assessment['explanation'] as $reason)
-                            <tr class="border-t">
-                                <td class="p-2">{{ $reason['label'] }}</td>
-                                <td class="p-2 text-right">{{ round($reason['value'], 2) }}</td>
-                                <td class="p-2 {{ $reason['impact'] > 0 ? 'text-red-700' : 'text-green-700' }}">
-                                    {{ $reason['direction'] }}
-                                </td>
-                            </tr>
-                        @endforeach
-                        </tbody>
-                    </table>
-                    <p class="text-xs text-gray-500 mt-2">
-                        These factors are linked to late payment in the training data. They do not prove cause.
-                    </p>
+                    <label class="pg-label">Reason, if you differ from the recommendation</label>
+                    <textarea name="override_reason" rows="3"
+                              class="mt-2 w-full rounded-xl text-sm"
+                              style="border:1px solid var(--pg-line); background:#fff; padding:12px 14px"
+                              placeholder="For example, long standing client who has guaranteed payment in person">{{ old('override_reason') }}</textarea>
+                    @error('override_reason')
+                        <p class="text-xs mt-2" style="color:var(--pg-high)">{{ $message }}</p>
+                    @enderror
                 </div>
 
-                <p class="text-xs text-gray-500">
-                    Assessed with the {{ $assessment['model_used'] }} model.
-                    @if ($assessment['medium_floor_applied'])
-                        Raised to Medium because this client has no settled invoices yet.
-                    @endif
-                </p>
-
-                <a href="{{ route('invoices.index') }}" class="text-blue-600 underline">Back to invoices</a>
-            </div>
+                <button type="submit" class="pg-btn">Save decision</button>
+            </form>
         </div>
     </div>
 </x-app-layout>

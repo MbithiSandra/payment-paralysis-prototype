@@ -80,3 +80,18 @@
 }
 .pg-table td      { padding: 16px 22px; font-size: 14px; border-top: 1px solid #F2EDE6; }
 .pg-table tbody tr:hover { background: #FBF8F4; }
+
+.pg-side      { background: var(--pg-forest); }
+.pg-side-mark { background: var(--pg-accent); color: #fff; border-radius: 11px; }
+
+.pg-side-link {
+    display: flex; align-items: center; gap: 11px;
+    padding: 11px 16px; margin: 2px 12px; border-radius: 12px;
+    font-size: 13.5px; color: #B9D3CF; transition: background .15s, color .15s;
+}
+.pg-side-link:hover          { background: #27463F; color: #E6F1EC; }
+.pg-side-link--active        { background: #2C5048; color: #FFFFFF; font-weight: 600; }
+.pg-side-link--muted         { color: #6F9289; cursor: default; }
+.pg-side-link--muted:hover   { background: transparent; color: #6F9289; }
+
+[x-cloak] { display: none !important; }    /* to prevent backdrop from flashing on load */
