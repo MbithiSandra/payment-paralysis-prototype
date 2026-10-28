@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\Client;
 use App\Models\Invoice;
 use App\Services\RiskAssessmentService;
+use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -12,16 +14,108 @@ use Illuminate\Support\Facades\Schema;
 
 class DashboardController extends Controller
 {
+    public const PERIODS = [
+        'month' => 'This month',
+        '3m'    => 'Last 3 months',
+        '6m'    => 'Last 6 months',
+        'year'  => 'This year',
+    ];
+
     public function __construct(private RiskAssessmentService $risk)
     {
     }
 
-    public function index()
+    public function index(Request $request)
     {
-       $kraPin = DB::table('smes')->where('user_id', auth()->id())->value('kra_pin');
+        return view('dashboard', $this->buildData($request));
+    }
+
+    /** FR11: the KPI report as a PDF. */
+    public function exportPdf(Request $request)
+    {
+        $data = $this->buildData($request);
+        abort_if($data['empty'], 404);
+
+        $data['generatedAt'] = now();
+        $data['ownerName']   = auth()->user()->name;
+
+        return Pdf::loadView('reports.kpi-pdf', $data)
+            ->setPaper('a4', 'portrait')
+            ->download('kpi-report-' . now()->format('Y-m-d') . '.pdf');
+    }
+
+    /** FR11: every invoice in the period as a CSV that Power BI can open. */
+    public function exportCsv(Request $request)
+    {
+        $data = $this->buildData($request);
+        abort_if($data['empty'], 404);
+
+        $from = $data['from'];
+        $to   = $data['to'];
+
+        $risk    = collect($data['assessments'])->keyBy(fn ($row) => $row['client']->client_code);
+        $clients = $data['clientList']->keyBy('client_code');
+
+        $invoices = $data['invoiceList']
+            ->filter(fn ($i) => $i->issue_date->between($from, $to))
+            ->sortBy('issue_date');
+
+        $filename = 'powerbi-invoices-' . now()->format('Y-m-d') . '.csv';
+
+        return response()->streamDownload(function () use ($invoices, $clients, $risk) {
+            $out = fopen('php://output', 'w');
+            fwrite($out, "\xEF\xBB\xBF");                       // so Excel and Power BI read it as UTF-8
+
+            fputcsv($out, [
+                'invoice_number', 'client_code', 'client_name', 'sector',
+                'amount_kes', 'issue_date', 'due_date', 'payment_date',
+                'terms_days', 'days_late', 'status',
+                'client_risk_tier', 'client_chance_late_percent', 'model_used',
+            ]);
+
+            foreach ($invoices as $i) {
+                $client = $clients->get($i->client_code);
+                $row    = $risk->get($i->client_code);
+
+                if ($i->payment_date) {
+                    $status = $i->days_late > 0 ? 'Paid late' : 'Paid on time';
+                } else {
+                    $status = $i->due_date->lt(today()) ? 'Overdue' : 'Unpaid, not yet due';
+                }
+
+                fputcsv($out, [
+                    $i->invoice_number,
+                    $i->client_code,
+                    $client?->client_name,
+                    $client?->sector,
+                    number_format((float) $i->amount, 2, '.', ''),
+                    $i->issue_date->toDateString(),
+                    $i->due_date->toDateString(),
+                    $i->payment_date?->toDateString(),
+                    $i->issue_date->diffInDays($i->due_date),
+                    $i->payment_date ? $i->days_late : '',
+                    $status,
+                    $row['tier'] ?? '',
+                    $row['confidence'] ?? '',
+                    $row['model_used'] ?? '',
+                ]);
+            }
+
+            fclose($out);
+        }, $filename, ['Content-Type' => 'text/csv; charset=UTF-8']);
+    }
+
+    /** Everything the dashboard, the PDF and the CSV need, in one place. */
+    private function buildData(Request $request): array
+    {
+        [$period, $from, $to, $periodLabel] = $this->period($request);
+
+        $base = compact('period', 'from', 'to', 'periodLabel');
+
+        $kraPin = DB::table('smes')->where('user_id', auth()->id())->value('kra_pin');
 
         if (! $kraPin) {
-            return view('dashboard', ['empty' => true]);
+            return ['empty' => true] + $base;
         }
 
         $clients  = Client::where('kra_pin', $kraPin)->orderBy('client_name')->get();
@@ -29,10 +123,12 @@ class DashboardController extends Controller
         $invoices = Invoice::whereIn('client_code', $codes)->get();
 
         $settled     = $invoices->filter(fn ($i) => $i->payment_date !== null);
-        $outstanding = $invoices->filter(fn ($i) => $i->payment_date === null);
-        $lateSettled = $settled->filter(fn ($i) => $i->days_late > 0);
+        $outstanding = $invoices->filter(fn ($i) => $i->payment_date === null);   // owed today
 
-        [$revenue, $expenses] = $this->budgetTotals($kraPin);
+        $settledInPeriod = $settled->filter(fn ($i) => $i->payment_date->between($from, $to));
+        $lateInPeriod    = $settledInPeriod->filter(fn ($i) => $i->days_late > 0);
+
+        [$revenue, $expenses] = $this->budgetTotals($kraPin, $from, $to);
 
         $assessments = $this->assessEveryClient($clients, $invoices);
         $tierCounts  = ['Low' => 0, 'Medium' => 0, 'High' => 0];
@@ -43,33 +139,78 @@ class DashboardController extends Controller
             }
         }
 
-        $months = collect(range(5, 0))->map(fn ($back) => Carbon::now()->startOfMonth()->subMonths($back));
+        $months = collect();
+        for ($m = $from->copy()->startOfMonth(); $m->lte($to); $m->addMonth()) {
+            $months->push($m->copy());
+        }
+        $months = $months->take(-12);
 
-        $trend = $months->map(function (Carbon $month) use ($settled) {
-            $inMonth = $settled->filter(fn ($i) =>
+        $trend = $months->map(function (Carbon $month) use ($settledInPeriod) {
+            $inMonth = $settledInPeriod->filter(fn ($i) =>
                 $i->payment_date->year === $month->year && $i->payment_date->month === $month->month);
 
             return [
-                'label' => $month->format('M'),
-                'value' => $inMonth->count() ? round($inMonth->avg('days_late'), 1) : null,
+                'label'   => $month->format('M Y'),
+                'short'   => $month->format('M'),
+                'value'   => $inMonth->count() ? round($inMonth->avg('days_late'), 1) : null,
+                'settled' => $inMonth->count(),
             ];
-        });
+        })->values();
 
-        return view('dashboard', [
+        return $base + [
             'empty'            => false,
             'receivables'      => $this->short($outstanding->sum('amount')),
             'outstandingCount' => $outstanding->count(),
-            'avgDaysLate'      => $lateSettled->count() ? round($lateSettled->avg('days_late')) : null,
-            'latePayments'     => $lateSettled->count(),
-            'settledCount'     => $settled->count(),
+            'avgDaysLate'      => $lateInPeriod->count() ? round($lateInPeriod->avg('days_late')) : null,
+            'latePayments'     => $lateInPeriod->count(),
+            'settledCount'     => $settledInPeriod->count(),
             'revenue'          => $this->short($revenue),
             'expenses'         => $this->short($expenses),
-            'trendLabels'      => $trend->pluck('label'),
+            'trend'            => $trend,
+            'trendLabels'      => $trend->pluck('short'),
             'trendValues'      => $trend->pluck('value'),
             'tierCounts'       => $tierCounts,
             'clientsCount'     => $clients->count(),
             'assessments'      => $assessments,
-        ]);
+            'clientList'       => $clients,
+            'invoiceList'      => $invoices,
+        ];
+    }
+
+    /** Work out the reporting period from the web address. */
+    private function period(Request $request): array
+    {
+        $period = $request->query('period', '6m');
+        $to = now()->endOfDay();
+
+        if ($period === 'custom') {
+            try {
+                $from = Carbon::parse($request->query('from'))->startOfDay();
+                $to   = Carbon::parse($request->query('to'))->endOfDay();
+            } catch (\Throwable $e) {
+                $from = null;
+            }
+
+            if ($from && $from->lte($to) && $to->lte(now()->endOfDay())) {
+                return ['custom', $from, $to, $from->format('d M Y') . ' to ' . $to->format('d M Y')];
+            }
+
+            $period = '6m';
+            $to = now()->endOfDay();
+        }
+
+        $from = match ($period) {
+            'month' => now()->startOfMonth(),
+            '3m'    => now()->startOfMonth()->subMonths(2),
+            'year'  => now()->startOfYear(),
+            default => now()->startOfMonth()->subMonths(5),
+        };
+
+        if (! array_key_exists($period, self::PERIODS)) {
+            $period = '6m';
+        }
+
+        return [$period, $from, $to, self::PERIODS[$period]];
     }
 
     /**
@@ -87,7 +228,7 @@ class DashboardController extends Controller
             $subject = $theirs->firstWhere('payment_date', null) ?: $theirs->first();
 
             if (! $subject) {
-                continue;                       // a client with no invoices yet
+                continue;
             }
 
             $settled = $theirs->filter(fn ($i) => $i->payment_date !== null);
@@ -118,11 +259,8 @@ class DashboardController extends Controller
         return $rows;
     }
 
-    /**
-     * Revenue and expenses from the last six monthly budget entries.
-     * Works out the column names so it fits whatever the budget table calls them.
-     */
-    private function budgetTotals(string $kraPin): array
+    /** Revenue and expenses for the budget months inside the period. */
+    private function budgetTotals(string $kraPin, Carbon $from, Carbon $to): array
     {
         if (! Schema::hasTable('monthly_budgets')) {
             return [0, 0];
@@ -137,7 +275,7 @@ class DashboardController extends Controller
         $ownerCol    = $pick(['kra_pin', 'sme_kra_pin']);
 
         if (! $revenueCol || ! $expensesCol) {
-            return [0, 0, 0];
+            return [0, 0];
         }
 
         $query = DB::table('monthly_budgets');
@@ -146,11 +284,18 @@ class DashboardController extends Controller
             $query->where($ownerCol, $kraPin);
         }
 
-        if ($monthCol) {
-            $query->orderByDesc($monthCol);
-        }
+        $rows = $query->get();
 
-        $rows = $query->limit(6)->get();
+        if ($monthCol) {
+            $start = $from->copy()->startOfMonth();
+            $rows = $rows->filter(function ($row) use ($monthCol, $start, $to) {
+                try {
+                    return Carbon::parse($row->$monthCol)->between($start, $to);
+                } catch (\Throwable $e) {
+                    return false;
+                }
+            });
+        }
 
         return [$rows->sum($revenueCol), $rows->sum($expensesCol)];
     }

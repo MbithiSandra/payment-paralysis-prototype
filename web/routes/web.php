@@ -28,6 +28,11 @@ Route::middleware('auth')->group(function () {
     Route::post('/clients/{client}/decision', [RiskAssessmentController::class, 'storeDecision'])
         ->name('assess.decision');
 
+        Route::get('/dashboard/export/pdf', [\App\Http\Controllers\DashboardController::class, 'exportPdf'])
+        ->name('dashboard.pdf');
+    Route::get('/dashboard/export/csv', [\App\Http\Controllers\DashboardController::class, 'exportCsv'])
+        ->name('dashboard.csv');    
+
     Route::get('/invoices/{invoice}/risk', [RiskAssessmentController::class, 'show'])
         ->name('invoices.risk');
 

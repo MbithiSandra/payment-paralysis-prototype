@@ -7,12 +7,35 @@
                     {{ explode(' ', auth()->user()->name)[0] }}
                 </h1>
                 <p class="text-sm text-[color:var(--pg-muted)] mt-1">
-                    Here is how your credit position looks today
+                    Showing {{ $periodLabel ?? 'Last 6 months' }}
                 </p>
             </div>
-            <div class="flex items-center gap-3">
-                <span class="pg-chip">Last 6 months</span>
-                <a href="#" class="pg-btn">Export report</a>
+
+            <div x-data="{ custom: {{ ($period ?? '') === 'custom' ? 'true' : 'false' }} }"
+                 class="flex flex-col items-end gap-3">
+                <div class="flex flex-wrap items-center gap-2">
+                    @foreach (\App\Http\Controllers\DashboardController::PERIODS as $key => $label)
+                        <a href="{{ route('dashboard', ['period' => $key]) }}"
+                           class="{{ ($period ?? '6m') === $key ? 'pg-btn' : 'pg-chip' }}">{{ $label }}</a>
+                    @endforeach
+                    <button type="button" @click="custom = !custom"
+                            class="{{ ($period ?? '') === 'custom' ? 'pg-btn' : 'pg-chip' }}">Custom</button>
+                                        <a href="{{ route('dashboard.pdf', request()->query()) }}" class="pg-chip">Download PDF</a>
+                    <a href="{{ route('dashboard.csv', request()->query()) }}" class="pg-chip">Power BI (CSV)</a>
+                </div>
+
+                <form x-show="custom" x-cloak method="GET" action="{{ route('dashboard') }}"
+                      class="flex flex-wrap items-center gap-2">
+                    <input type="hidden" name="period" value="custom">
+                    <input type="date" name="from" required max="{{ today()->toDateString() }}"
+                           value="{{ isset($from) ? $from->toDateString() : '' }}"
+                           class="rounded-xl text-sm" style="border:1px solid var(--pg-line); background:#fff">
+                    <span class="text-sm text-[color:var(--pg-muted)]">to</span>
+                    <input type="date" name="to" required max="{{ today()->toDateString() }}"
+                           value="{{ isset($to) ? $to->toDateString() : '' }}"
+                           class="rounded-xl text-sm" style="border:1px solid var(--pg-line); background:#fff">
+                    <button type="submit" class="pg-btn">Apply</button>
+                </form>
             </div>
         </div>
     </x-slot>
@@ -39,12 +62,12 @@
                         </p>
                     </div>
                     <span class="text-xs px-3 py-1.5 rounded-full"
-                          style="background:#2C5048; color:#B7D3C9">Receivables</span>
+                          style="background:#2C5048; color:#B7D3C9">Today</span>
                 </div>
 
                 <div class="mt-6 h-40"><canvas id="trendChart"></canvas></div>
 
-                <p class="text-xs mt-2" style="color:#7FA396">Average days late per month</p>
+                <p class="text-xs mt-2" style="color:#7FA396">Average days late per month, {{ strtolower($periodLabel) }}</p>
 
                 <div class="mt-5 pt-5 grid grid-cols-3 gap-4" style="border-top:1px solid #2C5048">
                     <div>
@@ -62,12 +85,13 @@
                         <p class="text-xl font-semibold mt-1" style="color:#F2F7F4">{{ $settledCount }}</p>
                     </div>
                 </div>
+                <p class="text-[11px] mt-3" style="color:#7FA396">These three figures cover payments made in the chosen period</p>
             </div>
 
             {{-- Risk split --}}
             <div class="pg-card p-7">
                 <h2 class="pg-display text-xl">Risk split</h2>
-                <p class="text-sm text-[color:var(--pg-muted)] mt-1">{{ $clientsCount }} clients screened</p>
+                <p class="text-sm text-[color:var(--pg-muted)] mt-1">{{ $clientsCount }} clients screened, as of today</p>
 
                 <div class="h-44 mt-5"><canvas id="tierChart"></canvas></div>
 
@@ -107,7 +131,7 @@
             <div class="px-7 pt-6 pb-4 flex items-center justify-between">
                 <div>
                     <h2 class="pg-display text-xl">Clients by risk</h2>
-                    <p class="text-sm text-[color:var(--pg-muted)] mt-1">Highest risk first</p>
+                    <p class="text-sm text-[color:var(--pg-muted)] mt-1">Highest risk first, as of today</p>
                 </div>
                 <a href="{{ route('clients.index') }}" class="pg-chip">View all clients</a>
             </div>
@@ -156,8 +180,8 @@
         </div>
 
         <p class="text-xs text-[color:var(--pg-muted)] px-1">
-            Risk tiers come from the machine learning service and refresh every ten minutes.
-            Chance late is the calibrated probability of settling after the due date not a measure of certainty.
+            Money owed and risk tiers always show today. Payment figures, the trend chart, revenue and expenses follow the chosen period.
+            Chance late is the calibrated probability of settling after the due date, not a measure of certainty.
         </p>
 
         <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>

@@ -43,11 +43,7 @@
             <a href="{{ route('decisions.index') }}"
                class="pg-side-link {{ request()->routeIs('decisions.*') || request()->routeIs('invoices.risk') ? 'pg-side-link--active' : '' }}">Assessments</a>
 
-            <span class="pg-side-link pg-side-link--muted">
-                Reports
-                <span class="ml-auto text-[9px] px-2 py-0.5 rounded-full"
-                      style="background:#27463F; color:#7FB3AC">soon</span>
-            </span>
+
         </nav>
 
         <div class="px-6 py-6" style="border-top:1px solid #27463F">
