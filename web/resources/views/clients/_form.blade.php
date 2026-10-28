@@ -1,7 +1,7 @@
 @csrf
 <div class="grid gap-5 sm:grid-cols-2">
     <div class="sm:col-span-2">
-        <x-input-label for="client_name" value="Client name" />
+        <x-input-label for="client_name" value="Client (Business) name" />
         <x-text-input id="client_name" name="client_name" type="text" class="block mt-1 w-full"
                       :value="old('client_name', $client->client_name ?? '')" required />
         <x-input-error :messages="$errors->get('client_name')" class="mt-2" />

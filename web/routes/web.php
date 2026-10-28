@@ -23,6 +23,11 @@ Route::middleware('auth')->group(function () {
     Route::resource('clients', \App\Http\Controllers\ClientController::class);
     Route::resource('invoices', \App\Http\Controllers\InvoiceController::class)->except(['show']);
 
+        Route::get('/assess', [RiskAssessmentController::class, 'create'])->name('assess.create');
+    Route::get('/assess/result', [RiskAssessmentController::class, 'proposal'])->name('assess.result');
+    Route::post('/clients/{client}/decision', [RiskAssessmentController::class, 'storeDecision'])
+        ->name('assess.decision');
+
     Route::get('/invoices/{invoice}/risk', [RiskAssessmentController::class, 'show'])
         ->name('invoices.risk');
 

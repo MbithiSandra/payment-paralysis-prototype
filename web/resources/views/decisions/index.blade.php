@@ -8,6 +8,10 @@
 
     <div class="pb-14 pt-8 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-5">
 
+        @if (session('status'))
+            <div class="pg-tile pg-tile--sage text-sm">{{ session('status') }}</div>
+        @endif
+
         <div class="grid grid-cols-2 lg:grid-cols-3 gap-5">
             <div class="pg-tile pg-tile--sand">
                 <p class="pg-label">Decisions recorded</p>
@@ -29,6 +33,7 @@
                     <tr>
                         <th>When</th>
                         <th>Client</th>
+                        <th>Based on</th>
                         <th>Recommended</th>
                         <th>Decision taken</th>
                         <th>Reason given</th>
@@ -39,6 +44,7 @@
                     <tr>
                         <td class="text-[color:var(--pg-muted)]">{{ $d->created_at->format('d M Y') }}</td>
                         <td class="font-semibold">{{ $d->client->client_name ?? $d->client_code }}</td>
+                        <td class="text-[color:var(--pg-muted)]">{{ $d->invoice_id ? 'Invoice' : 'Proposed terms' }}</td>
                         <td>
                             <span class="pg-pill pg-pill--{{ strtolower($d->recommended_tier) }}">
                                 {{ $d->recommended_tier }}
@@ -53,8 +59,8 @@
                         <td class="text-[color:var(--pg-muted)]">{{ $d->override_reason ?: '-' }}</td>
                     </tr>
                 @empty
-                    <tr><td colspan="5" class="text-center text-[color:var(--pg-muted)] py-12">
-                        No decisions recorded yet. Assess an invoice and record what you decided.
+                    <tr><td colspan="6" class="text-center text-[color:var(--pg-muted)] py-12">
+                        No decisions recorded yet. Assess a client and record what you decided.
                     </td></tr>
                 @endforelse
                 </tbody>

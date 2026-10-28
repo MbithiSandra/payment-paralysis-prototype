@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>{{ config('app.name', 'PayGuard') }}</title>
+    <title>{{ config('app.name', '') }}</title>
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
     @vite(['resources/css/app.css', 'resources/js/app.js'])
@@ -18,7 +18,7 @@
            :class="open ? 'translate-x-0' : '-translate-x-full'">
 
         <div class="flex items-center gap-3 px-6 pt-7 pb-8">
-            <div class="pg-side-mark w-9 h-9 flex items-center justify-center font-bold">P</div>
+            <div class="pg-side-mark w-9 h-9 flex items-center justify-center font-bold"></div>
             <div>
                 <p class="text-white font-semibold text-[15px] leading-tight">SME Credit Screening</p>
             </div>
@@ -33,6 +33,9 @@
 
             <a href="{{ route('invoices.index') }}"
                class="pg-side-link {{ request()->routeIs('invoices.index') || request()->routeIs('invoices.create') || request()->routeIs('invoices.edit') ? 'pg-side-link--active' : '' }}">Invoices</a>
+
+            <a href="{{ route('assess.create') }}"
+               class="pg-side-link {{ request()->routeIs('assess.*') ? 'pg-side-link--active' : '' }}">Assess client</a>
 
             <a href="{{ route('budgets.index') }}"
                class="pg-side-link {{ request()->routeIs('budgets.*') ? 'pg-side-link--active' : '' }}">Budget</a>
@@ -68,7 +71,7 @@
     <div class="flex-1 min-w-0">
         <div class="lg:hidden flex items-center gap-3 px-4 py-3" style="border-bottom:1px solid var(--pg-line)">
             <button @click="open = true" class="text-xl leading-none">&#9776;</button>
-            <span class="font-semibold">PayGuard</span>
+            <span class="font-semibold"></span>
         </div>
 
         @isset($header)

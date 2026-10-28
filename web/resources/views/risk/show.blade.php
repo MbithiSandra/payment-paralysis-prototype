@@ -4,11 +4,21 @@
             <div>
                 <h1 class="pg-display text-3xl">Risk assessment</h1>
                 <p class="text-sm text-[color:var(--pg-muted)] mt-1">
-                    {{ $client->client_name }} &middot; invoice {{ $invoice->invoice_number }} of
-                    KES {{ number_format($invoice->amount, 2) }}, due {{ $invoice->due_date->format('d M Y') }}
+                    {{ $client->client_name }} &middot;
+                    @if ($invoice)
+                        invoice {{ $invoice->invoice_number }} of
+                        KES {{ number_format($invoice->amount, 2) }}, due {{ $invoice->due_date->format('d M Y') }}
+                    @else
+                        proposed credit of KES {{ number_format($proposal['amount'], 2) }}
+                        on {{ $proposal['terms_days'] }} day terms, due {{ $proposal['due_date']->format('d M Y') }}
+                    @endif
                 </p>
             </div>
-            <a href="{{ route('invoices.index') }}" class="pg-chip">Back to invoices</a>
+            @if ($invoice)
+                <a href="{{ route('invoices.index') }}" class="pg-chip">Back to invoices</a>
+            @else
+                <a href="{{ route('assess.create', ['client' => $client->client_code]) }}" class="pg-chip">Assess again</a>
+            @endif
         </div>
     </x-slot>
 
@@ -92,7 +102,9 @@
                 The system advises. You decide. Give a reason if you go a different way.
             </p>
 
-            <form method="POST" action="{{ route('decisions.store', $invoice) }}" class="mt-6 space-y-5">
+            <form method="POST"
+                  action="{{ $invoice ? route('decisions.store', $invoice) : route('assess.decision', $client) }}"
+                  class="mt-6 space-y-5">
                 @csrf
                 <input type="hidden" name="recommended_tier"   value="{{ $assessment['tier'] }}">
                 <input type="hidden" name="probability_late"   value="{{ $assessment['probability_late'] }}">
