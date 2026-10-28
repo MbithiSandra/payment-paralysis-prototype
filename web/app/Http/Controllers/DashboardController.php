@@ -30,6 +30,12 @@ class DashboardController extends Controller
         return view('dashboard', $this->buildData($request));
     }
 
+        /** FR11: the reports page with both downloads. */
+    public function reports(Request $request)
+    {
+        return view('reports.index', $this->buildData($request));
+    }
+
     /** FR11: the KPI report as a PDF. */
     public function exportPdf(Request $request)
     {

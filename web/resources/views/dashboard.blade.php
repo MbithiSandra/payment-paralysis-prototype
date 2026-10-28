@@ -10,33 +10,7 @@
                     Showing {{ $periodLabel ?? 'Last 6 months' }}
                 </p>
             </div>
-
-            <div x-data="{ custom: {{ ($period ?? '') === 'custom' ? 'true' : 'false' }} }"
-                 class="flex flex-col items-end gap-3">
-                <div class="flex flex-wrap items-center gap-2">
-                    @foreach (\App\Http\Controllers\DashboardController::PERIODS as $key => $label)
-                        <a href="{{ route('dashboard', ['period' => $key]) }}"
-                           class="{{ ($period ?? '6m') === $key ? 'pg-btn' : 'pg-chip' }}">{{ $label }}</a>
-                    @endforeach
-                    <button type="button" @click="custom = !custom"
-                            class="{{ ($period ?? '') === 'custom' ? 'pg-btn' : 'pg-chip' }}">Custom</button>
-                                        <a href="{{ route('dashboard.pdf', request()->query()) }}" class="pg-chip">Download PDF</a>
-                    <a href="{{ route('dashboard.csv', request()->query()) }}" class="pg-chip">Power BI (CSV)</a>
-                </div>
-
-                <form x-show="custom" x-cloak method="GET" action="{{ route('dashboard') }}"
-                      class="flex flex-wrap items-center gap-2">
-                    <input type="hidden" name="period" value="custom">
-                    <input type="date" name="from" required max="{{ today()->toDateString() }}"
-                           value="{{ isset($from) ? $from->toDateString() : '' }}"
-                           class="rounded-xl text-sm" style="border:1px solid var(--pg-line); background:#fff">
-                    <span class="text-sm text-[color:var(--pg-muted)]">to</span>
-                    <input type="date" name="to" required max="{{ today()->toDateString() }}"
-                           value="{{ isset($to) ? $to->toDateString() : '' }}"
-                           class="rounded-xl text-sm" style="border:1px solid var(--pg-line); background:#fff">
-                    <button type="submit" class="pg-btn">Apply</button>
-                </form>
-            </div>
+            @include('partials.period-filter', ['target' => 'dashboard'])
         </div>
     </x-slot>
 

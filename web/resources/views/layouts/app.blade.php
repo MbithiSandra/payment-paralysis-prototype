@@ -43,7 +43,8 @@
             <a href="{{ route('decisions.index') }}"
                class="pg-side-link {{ request()->routeIs('decisions.*') || request()->routeIs('invoices.risk') ? 'pg-side-link--active' : '' }}">Assessments</a>
 
-
+                        <a href="{{ route('reports.index') }}"
+               class="pg-side-link {{ request()->routeIs('reports.*') ? 'pg-side-link--active' : '' }}">Reports</a>
         </nav>
 
         <div class="px-6 py-6" style="border-top:1px solid #27463F">
