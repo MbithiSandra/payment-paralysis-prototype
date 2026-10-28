@@ -7,6 +7,7 @@ use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\InvoiceImportController;
 use App\Http\Controllers\MonthlyBudgetController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\ReminderController;
 use App\Http\Controllers\RiskAssessmentController;
 use Illuminate\Support\Facades\Route;
 
@@ -45,6 +46,9 @@ Route::middleware('auth')->group(function () {
     Route::get('/reports', [DashboardController::class, 'reports'])->name('reports.index');
     Route::get('/reports/pdf', [DashboardController::class, 'exportPdf'])->name('dashboard.pdf');
     Route::get('/reports/csv', [DashboardController::class, 'exportCsv'])->name('dashboard.csv');
+
+    // payment reminders
+    Route::get('/reminders', [ReminderController::class, 'index'])->name('reminders.index');
 
     // monthly budget (FR04)
     Route::get('budgets', [MonthlyBudgetController::class, 'index'])->name('budgets.index');

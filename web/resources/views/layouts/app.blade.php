@@ -34,6 +34,9 @@
             <a href="{{ route('invoices.index') }}"
                class="pg-side-link {{ request()->routeIs('invoices.index') || request()->routeIs('invoices.create') || request()->routeIs('invoices.edit') ? 'pg-side-link--active' : '' }}">Invoices</a>
 
+
+                           <a href="{{ route('reminders.index') }}"
+               class="pg-side-link {{ request()->routeIs('reminders.*') ? 'pg-side-link--active' : '' }}">Reminders</a>
             <a href="{{ route('assess.create') }}"
                class="pg-side-link {{ request()->routeIs('assess.*') ? 'pg-side-link--active' : '' }}">Assess client</a>
 
