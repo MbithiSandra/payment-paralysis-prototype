@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\Client;
 use Illuminate\Http\Request;
+use App\Services\RiskAssessmentService;
+use Illuminate\Support\Facades\Cache;
 
 class ClientController extends Controller
 {
@@ -73,7 +75,31 @@ class ClientController extends Controller
 
         $client->load(['invoices' => fn ($q) => $q->orderByDesc('issue_date')]);
 
-        return view('clients.show', compact('client'));
+        $riskHistory = $this->riskHistory($client);
+
+        return view('clients.show', compact('client', 'riskHistory'));
+    }
+
+    /** Chance late at each of the last twelve invoices, using only what was known on that day. */
+    private function riskHistory(Client $client): array
+    {
+        $risk = app(RiskAssessmentService::class);
+
+        return $client->invoices->sortBy('issue_date')->take(-12)->map(function ($inv) use ($client, $risk) {
+            $result = Cache::remember(
+                "risk:{$client->client_code}:{$inv->id}:{$inv->updated_at?->timestamp}",
+                now()->addMinutes(10),
+                fn () => $risk->assess($client, $inv)
+            );
+
+            return [
+                'label'  => $inv->issue_date->format('d M y'),
+                'number' => $inv->invoice_number,
+                'chance' => $result['confidence'] ?? null,
+                'tier'   => $result['tier'] ?? null,
+                'model'  => $result['model_used'] ?? null,
+            ];
+        })->values()->all();
     }
 
     public function edit(Client $client)

@@ -18,6 +18,8 @@
             <div><div class="text-gray-500">Client since</div>
                  <div>{{ $client->relationship_start_date?->format('d M Y') ?: '-' }}</div></div>
         </div>
+        
+                        @include('clients._risk-history')
 
         <div class="bg-white shadow-sm sm:rounded-lg overflow-hidden">
             <div class="px-6 py-4 border-b font-semibold">Payment history</div>
