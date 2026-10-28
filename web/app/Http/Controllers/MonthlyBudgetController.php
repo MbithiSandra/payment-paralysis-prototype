@@ -43,6 +43,25 @@ class MonthlyBudgetController extends Controller
         return redirect()->route('budgets.index')->with('status', 'Month saved.');
     }
 
+        public function edit(MonthlyBudget $budget)
+    {
+        abort_unless($budget->kra_pin === $this->sme()->kra_pin, 403);
+
+        return view('budgets.edit', compact('budget'));
+    }
+
+    public function update(Request $request, MonthlyBudget $budget)
+    {
+        abort_unless($budget->kra_pin === $this->sme()->kra_pin, 403);
+
+        $budget->update($request->validate([
+            'revenue'  => ['required', 'numeric', 'min:0'],
+            'expenses' => ['required', 'numeric', 'min:0'],
+        ]));
+
+        return redirect()->route('budgets.index')->with('status', 'Month updated.');
+    }
+
     public function destroy(MonthlyBudget $budget)
     {
         abort_unless($budget->kra_pin === $this->sme()->kra_pin, 403);

@@ -1,69 +1,81 @@
 <x-app-layout>
     <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 leading-tight">Monthly revenue and expenses</h2>
+        <div>
+            <h1 class="pg-display text-3xl">Monthly budget</h1>
+            <p class="text-sm text-[color:var(--pg-muted)] mt-1">Revenue received and expenses incurred each month</p>
+        </div>
     </x-slot>
 
-    <div class="py-8 max-w-5xl mx-auto sm:px-6 lg:px-8 space-y-6">
+    <div class="pb-14 pt-8 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 space-y-5">
         @include('partials.status')
 
-        <div class="bg-white shadow-sm sm:rounded-lg p-6">
-            <form method="POST" action="{{ route('budgets.store') }}" class="grid gap-4 sm:grid-cols-4 sm:items-end">
-                @csrf
+        <form method="POST" action="{{ route('budgets.store') }}" class="pg-card p-7">
+            @csrf
+            <div class="grid gap-5 sm:grid-cols-4 sm:items-end">
                 <div>
-                    <x-input-label for="month" value="Month" />
-                    <x-text-input id="month" name="month" type="month" class="block mt-1 w-full"
-                                  :value="old('month', now()->format('Y-m'))" required />
-                    <x-input-error :messages="$errors->get('month')" class="mt-2" />
+                    <label class="pg-label" for="month">Month</label>
+                    <input id="month" name="month" type="month" required
+                           max="{{ now()->format('Y-m') }}"
+                           value="{{ old('month', now()->format('Y-m')) }}"
+                           class="mt-2 w-full rounded-xl text-sm"
+                           style="border:1px solid var(--pg-line); background:#fff; padding:12px 14px">
+                    @error('month') <p class="text-xs mt-2" style="color:var(--pg-high)">{{ $message }}</p> @enderror
                 </div>
                 <div>
-                    <x-input-label for="revenue" value="Revenue (KES)" />
-                    <x-text-input id="revenue" name="revenue" type="number" step="0.01" min="0"
-                                  class="block mt-1 w-full" :value="old('revenue')" required />
-                    <x-input-error :messages="$errors->get('revenue')" class="mt-2" />
+                    <label class="pg-label" for="revenue">Revenue (KES)</label>
+                    <input id="revenue" name="revenue" type="number" step="0.01" min="0" required
+                           value="{{ old('revenue') }}"
+                           class="mt-2 w-full rounded-xl text-sm"
+                           style="border:1px solid var(--pg-line); background:#fff; padding:12px 14px">
+                    @error('revenue') <p class="text-xs mt-2" style="color:var(--pg-high)">{{ $message }}</p> @enderror
                 </div>
                 <div>
-                    <x-input-label for="expenses" value="Expenses (KES)" />
-                    <x-text-input id="expenses" name="expenses" type="number" step="0.01" min="0"
-                                  class="block mt-1 w-full" :value="old('expenses')" required />
-                    <x-input-error :messages="$errors->get('expenses')" class="mt-2" />
+                    <label class="pg-label" for="expenses">Expenses (KES)</label>
+                    <input id="expenses" name="expenses" type="number" step="0.01" min="0" required
+                           value="{{ old('expenses') }}"
+                           class="mt-2 w-full rounded-xl text-sm"
+                           style="border:1px solid var(--pg-line); background:#fff; padding:12px 14px">
+                    @error('expenses') <p class="text-xs mt-2" style="color:var(--pg-high)">{{ $message }}</p> @enderror
                 </div>
-                <div><x-primary-button class="w-full justify-center">Save month</x-primary-button></div>
-            </form>
-            <p class="mt-3 text-xs text-gray-500">
+                <div><button type="submit" class="pg-btn w-full">Save month</button></div>
+            </div>
+            <p class="mt-4 text-xs text-[color:var(--pg-muted)]">
                 Saving a month that already exists updates it rather than adding a second row.
             </p>
-        </div>
+        </form>
 
-        <div class="bg-white shadow-sm sm:rounded-lg overflow-hidden">
-            <table class="min-w-full divide-y divide-gray-200 text-sm">
-                <thead class="bg-gray-50">
+        <div class="pg-card overflow-hidden">
+            <table class="min-w-full pg-table">
+                <thead>
                     <tr>
-                        <th class="px-4 py-3 text-left font-semibold">Month</th>
-                        <th class="px-4 py-3 text-right font-semibold">Revenue</th>
-                        <th class="px-4 py-3 text-right font-semibold">Expenses</th>
-                        <th class="px-4 py-3 text-right font-semibold">Net</th>
-                        <th class="px-4 py-3"></th>
+                        <th>Month</th>
+                        <th class="text-right">Revenue</th>
+                        <th class="text-right">Expenses</th>
+                        <th class="text-right">Net</th>
+                        <th></th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-gray-100">
+                <tbody>
                     @forelse ($budgets as $b)
                         <tr>
-                            <td class="px-4 py-3">{{ $b->month->format('F Y') }}</td>
-                            <td class="px-4 py-3 text-right">{{ number_format($b->revenue, 2) }}</td>
-                            <td class="px-4 py-3 text-right">{{ number_format($b->expenses, 2) }}</td>
-                            <td class="px-4 py-3 text-right {{ $b->net < 0 ? 'text-red-600' : 'text-green-700' }}">
+                            <td class="font-semibold">{{ $b->month->format('F Y') }}</td>
+                            <td class="text-right">{{ number_format($b->revenue, 2) }}</td>
+                            <td class="text-right">{{ number_format($b->expenses, 2) }}</td>
+                            <td class="text-right font-semibold"
+                                style="color: {{ $b->net < 0 ? 'var(--pg-high)' : 'var(--pg-accent)' }}">
                                 {{ number_format($b->net, 2) }}
                             </td>
-                            <td class="px-4 py-3 text-right">
-                                <form action="{{ route('budgets.destroy', $b) }}" method="POST" class="inline"
+                            <td class="text-right whitespace-nowrap">
+                                <a href="{{ route('budgets.edit', $b) }}" class="hover:underline">Edit</a>
+                                <form action="{{ route('budgets.destroy', $b) }}" method="POST" class="inline ml-3"
                                       onsubmit="return confirm('Remove this month?')">
                                     @csrf @method('DELETE')
-                                    <button class="text-red-600 hover:underline">Remove</button>
+                                    <button class="hover:underline" style="color:var(--pg-high)">Remove</button>
                                 </form>
                             </td>
                         </tr>
                     @empty
-                        <tr><td colspan="5" class="px-4 py-8 text-center text-gray-500">
+                        <tr><td colspan="5" class="text-center text-[color:var(--pg-muted)] py-12">
                             No months recorded yet.
                         </td></tr>
                     @endforelse

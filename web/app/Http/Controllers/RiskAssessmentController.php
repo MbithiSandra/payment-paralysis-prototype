@@ -36,8 +36,10 @@ class RiskAssessmentController extends Controller
         }
 
         $proposal = null;
+        $alternatives = $this->alternatives($client, (float) $invoice->amount,
+            (int) $invoice->issue_date->diffInDays($invoice->due_date));
 
-        return view('risk.show', compact('invoice', 'client', 'assessment', 'proposal'));
+        return view('risk.show', compact('invoice', 'client', 'assessment', 'proposal', 'alternatives'));
     }
 
     /** FR05: the form. */
@@ -81,8 +83,9 @@ class RiskAssessmentController extends Controller
             'due_date'   => $issue->copy()->addDays((int) $data['terms_days']),
         ];
         $invoice = null;
+        $alternatives = $this->alternatives($client, (float) $data['amount'], (int) $data['terms_days']);
 
-        return view('risk.show', compact('invoice', 'client', 'assessment', 'proposal'));
+        return view('risk.show', compact('invoice', 'client', 'assessment', 'proposal', 'alternatives'));
     }
 
     /** FR09 for a proposal: record the decision without an invoice. */
@@ -120,5 +123,35 @@ class RiskAssessmentController extends Controller
         ])->save();
 
         return redirect()->route('decisions.index')->with('status', 'Decision recorded.');
+    }
+
+    /** Prescriptive: the same client on four other sets of terms, as if credit were given today. */
+    private function alternatives(Client $client, float $amount, int $terms): array
+    {
+        $options = [
+            ['label' => 'Shorter terms',   'amount' => $amount,               'terms' => 14],
+            ['label' => 'Standard terms',  'amount' => $amount,               'terms' => 30],
+            ['label' => 'Longer terms',    'amount' => $amount,               'terms' => 60],
+            ['label' => 'Half the amount', 'amount' => round($amount / 2, 2), 'terms' => $terms],
+        ];
+
+        $issue = now()->startOfDay();
+        $rows  = [];
+
+        foreach ($options as $option) {
+            $result = $this->risk->assessTerms($client, $option['amount'], $issue, $option['terms']);
+            if ($result) {
+                $rows[] = $option + ['tier' => $result['tier'], 'confidence' => $result['confidence']];
+            }
+        }
+
+        if ($rows) {
+            $best = min(array_column($rows, 'confidence'));
+            foreach ($rows as $i => $row) {
+                $rows[$i]['best'] = $row['confidence'] == $best;
+            }
+        }
+
+        return $rows;
     }
 }

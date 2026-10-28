@@ -31,10 +31,6 @@
             <div class="pg-tile pg-tile--clay text-sm">{{ session('error') }}</div>
         @endif
 
-        @php
-            $slug = strtolower($assessment['tier']);
-        @endphp
-
         {{-- Verdict --}}
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
             <div class="pg-card-dark lg:col-span-2 p-7">
@@ -94,6 +90,62 @@
                 These factors are linked to late payment in the training data. They do not prove cause.
             </p>
         </div>
+
+        {{-- Try different terms --}}
+        @if (! empty($alternatives))
+            <div class="pg-card overflow-hidden">
+                <div class="px-7 pt-6 pb-2">
+                    <h2 class="pg-display text-xl">Try different terms</h2>
+                    <p class="text-sm text-[color:var(--pg-muted)] mt-1">
+                        What the risk would be if you gave this client new credit today on other terms
+                    </p>
+                </div>
+
+                @if ($assessment['model_used'] === 'profile')
+                    <div class="pg-tile pg-tile--mist text-sm mx-7 mb-6 mt-3">
+                        This client has fewer than three settled invoices, so the system judges them on their business
+                        profile only. Changing the amount or the days does not change the risk yet. Start with a small
+                        order and let their payment record build up.
+                    </div>
+                @else
+                    <table class="min-w-full pg-table">
+                        <thead>
+                            <tr>
+                                <th>Option</th>
+                                <th class="text-right">Amount (KES)</th>
+                                <th class="text-right">Days to pay</th>
+                                <th>Tier</th>
+                                <th class="text-right">Chance late</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        @foreach ($alternatives as $alt)
+                            <tr @if ($alt['best']) style="background:#EEF4EF" @endif>
+                                <td class="font-semibold">
+                                    {{ $alt['label'] }}
+                                    @if ($alt['best'])
+                                        <span class="pg-pill pg-pill--low ml-2">lowest risk</span>
+                                    @endif
+                                </td>
+                                <td class="text-right">{{ number_format($alt['amount'], 2) }}</td>
+                                <td class="text-right">{{ $alt['terms'] }}</td>
+                                <td><span class="pg-pill pg-pill--{{ strtolower($alt['tier']) }}">{{ $alt['tier'] }}</span></td>
+                                <td class="text-right font-semibold">{{ $alt['confidence'] }}%</td>
+                                <td class="text-right">
+                                    <a href="{{ route('assess.result', ['client' => $client->client_code, 'amount' => $alt['amount'], 'terms_days' => $alt['terms']]) }}"
+                                       class="hover:underline">Open</a>
+                                </td>
+                            </tr>
+                        @endforeach
+                        </tbody>
+                    </table>
+                    <p class="text-xs text-[color:var(--pg-muted)] px-7 py-5">
+                        Use this to agree terms the client can keep. A shorter window or a smaller first order often brings the risk down.
+                    </p>
+                @endif
+            </div>
+        @endif
 
         {{-- Record the decision --}}
         <div class="pg-card p-7">
