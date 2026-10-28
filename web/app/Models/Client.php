@@ -18,6 +18,10 @@ protected $fillable = [
 
     protected $casts = [
         'relationship_start_date' => 'date',
+        'client_kra_pin'          => 'encrypted',
+        'contact_person'          => 'encrypted',
+        'phone'                   => 'encrypted',
+        'email'                   => 'encrypted',
     ];
 
     public function sme()
