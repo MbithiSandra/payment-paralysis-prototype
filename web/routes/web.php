@@ -56,6 +56,8 @@ Route::middleware('auth')->group(function () {
     Route::get('budgets/{budget}/edit', [MonthlyBudgetController::class, 'edit'])->name('budgets.edit');
     Route::put('budgets/{budget}', [MonthlyBudgetController::class, 'update'])->name('budgets.update');
     Route::delete('budgets/{budget}', [MonthlyBudgetController::class, 'destroy'])->name('budgets.destroy');
+
+        Route::post('/reports/powerbi', [DashboardController::class, 'openPowerBi'])->name('reports.powerbi');
 });
 
 require __DIR__.'/auth.php';

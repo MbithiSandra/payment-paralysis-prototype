@@ -40,4 +40,9 @@ return [
         'timeout' => 30,
     ],
 
+        'powerbi' => [
+        'dir'  => env('POWERBI_DIR'),
+        'file' => env('POWERBI_FILE'),
+    ],
+
 ];

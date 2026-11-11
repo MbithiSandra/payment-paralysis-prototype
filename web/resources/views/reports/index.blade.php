@@ -18,6 +18,13 @@
             Finish setting up your business profile to see reports.
         </div>
     @else
+                @if (session('status'))
+            <div class="pg-tile pg-tile--sage text-sm">{{ session('status') }}</div>
+        @endif
+        @if (session('error'))
+            <div class="pg-tile pg-tile--clay text-sm">{{ session('error') }}</div>
+        @endif
+
         @php
             $rowsInPeriod = $invoiceList->filter(fn ($i) => $i->issue_date->between($from, $to))->count();
         @endphp
@@ -73,13 +80,17 @@
                     One row per invoice issued in the period, {{ $rowsInPeriod }} {{ Str::plural('row', $rowsInPeriod) }},
                     with each client's risk tier attached so you can build your own charts.
                 </p>
-                <ol class="text-sm mt-4 space-y-2 list-decimal pl-5">
-                    <li>Download the file</li>
-                    <li>In Power BI Desktop choose Home, then Get data, then Text/CSV</li>
-                    <li>Pick the file and click Load</li>
+                                <ol class="text-sm mt-4 space-y-2 list-decimal pl-5">
+                    <li>Click Open in Power BI</li>
+                    <li>Power BI opens your saved report</li>
+                    <li>Click Refresh in Power BI to load the latest data</li>
                 </ol>
-                <div class="mt-auto pt-6">
-                    <a href="{{ route('dashboard.csv', request()->query()) }}" class="pg-btn">Download CSV</a>
+                <div class="mt-auto pt-6 flex flex-wrap items-center gap-2">
+                    <form method="POST" action="{{ route('reports.powerbi', request()->query()) }}">
+                        @csrf
+                        <button type="submit" class="pg-btn">Open in Power BI</button>
+                    </form>
+                    <a href="{{ route('dashboard.csv', request()->query()) }}" class="pg-chip">Download CSV</a>
                 </div>
             </div>
         </div>

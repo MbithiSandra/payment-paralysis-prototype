@@ -51,64 +51,106 @@ class DashboardController extends Controller
     }
 
     /** FR11: every invoice in the period as a CSV that Power BI can open. */
+        /** FR11: every invoice in the period as a CSV that Power BI can open. */
     public function exportCsv(Request $request)
     {
         $data = $this->buildData($request);
         abort_if($data['empty'], 404);
 
-        $from = $data['from'];
-        $to   = $data['to'];
+        $rows = $this->powerBiRows($data);
 
+        return response()->streamDownload(function () use ($rows) {
+            $out = fopen('php://output', 'w');
+            fwrite($out, "\xEF\xBB\xBF");
+            foreach ($rows as $row) {
+                fputcsv($out, $row);
+            }
+            fclose($out);
+        }, 'powerbi-invoices-' . now()->format('Y-m-d') . '.csv', ['Content-Type' => 'text/csv; charset=UTF-8']);
+    }
+
+    /** Saves the latest data for Power BI and opens the saved report on this laptop. */
+    public function openPowerBi(Request $request)
+    {
+        $data = $this->buildData($request);
+        abort_if($data['empty'], 404);
+
+        $dir  = rtrim((string) config('services.powerbi.dir'), '/');
+        $file = (string) config('services.powerbi.file');
+
+        if ($dir === '' || ! is_dir($dir)) {
+            return back()->with('error', 'Power BI folder not found. Create the folder C:\PayGuard on this laptop first.');
+        }
+
+        $out = @fopen($dir . '/invoices.csv', 'w');
+        if (! $out) {
+            return back()->with('error', 'Could not save the data file. Close any program using C:\PayGuard\invoices.csv and try again.');
+        }
+        fwrite($out, "\xEF\xBB\xBF");
+        foreach ($this->powerBiRows($data) as $row) {
+            fputcsv($out, $row);
+        }
+        fclose($out);
+
+        $report = $dir . '/' . basename(str_replace('\\', '/', $file));
+        if (! file_exists($report)) {
+            return back()->with('status', 'Data saved to C:\PayGuard\invoices.csv. Build and save PayGuard.pbix in that folder once, and this button will open it.');
+        }
+
+        $powershell = '/mnt/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe';
+        exec($powershell . ' -NoProfile -Command ' . escapeshellarg("Start-Process '{$file}'") . ' > /dev/null 2>&1 &');
+
+        return back()->with('status', 'Opening Power BI with the latest data. If it was already open, click Refresh in Power BI.');
+    }
+
+    /** The rows both the CSV download and the Power BI button use. */
+    private function powerBiRows(array $data): array
+    {
+        $from    = $data['from'];
+        $to      = $data['to'];
         $risk    = collect($data['assessments'])->keyBy(fn ($row) => $row['client']->client_code);
         $clients = $data['clientList']->keyBy('client_code');
+
+        $rows = [[
+            'invoice_number', 'client_code', 'client_name', 'sector',
+            'amount_kes', 'issue_date', 'due_date', 'payment_date',
+            'terms_days', 'days_late', 'status',
+            'client_risk_tier', 'client_chance_late_percent', 'model_used',
+        ]];
 
         $invoices = $data['invoiceList']
             ->filter(fn ($i) => $i->issue_date->between($from, $to))
             ->sortBy('issue_date');
 
-        $filename = 'powerbi-invoices-' . now()->format('Y-m-d') . '.csv';
+        foreach ($invoices as $i) {
+            $client = $clients->get($i->client_code);
+            $row    = $risk->get($i->client_code);
 
-        return response()->streamDownload(function () use ($invoices, $clients, $risk) {
-            $out = fopen('php://output', 'w');
-            fwrite($out, "\xEF\xBB\xBF");                       // so Excel and Power BI read it as UTF-8
-
-            fputcsv($out, [
-                'invoice_number', 'client_code', 'client_name', 'sector',
-                'amount_kes', 'issue_date', 'due_date', 'payment_date',
-                'terms_days', 'days_late', 'status',
-                'client_risk_tier', 'client_chance_late_percent', 'model_used',
-            ]);
-
-            foreach ($invoices as $i) {
-                $client = $clients->get($i->client_code);
-                $row    = $risk->get($i->client_code);
-
-                if ($i->payment_date) {
-                    $status = $i->days_late > 0 ? 'Paid late' : 'Paid on time';
-                } else {
-                    $status = $i->due_date->lt(today()) ? 'Overdue' : 'Unpaid, not yet due';
-                }
-
-                fputcsv($out, [
-                    $i->invoice_number,
-                    $i->client_code,
-                    $client?->client_name,
-                    $client?->sector,
-                    number_format((float) $i->amount, 2, '.', ''),
-                    $i->issue_date->toDateString(),
-                    $i->due_date->toDateString(),
-                    $i->payment_date?->toDateString(),
-                    $i->issue_date->diffInDays($i->due_date),
-                    $i->payment_date ? $i->days_late : '',
-                    $status,
-                    $row['tier'] ?? '',
-                    $row['confidence'] ?? '',
-                    $row['model_used'] ?? '',
-                ]);
+            if ($i->payment_date) {
+                $status = $i->days_late > 0 ? 'Paid late' : 'Paid on time';
+            } else {
+                $status = $i->due_date->lt(today()) ? 'Overdue' : 'Unpaid, not yet due';
             }
 
-            fclose($out);
-        }, $filename, ['Content-Type' => 'text/csv; charset=UTF-8']);
+            $rows[] = [
+                $i->invoice_number,
+                $i->client_code,
+                $client?->client_name,
+                $client?->sector,
+                number_format((float) $i->amount, 2, '.', ''),
+                $i->issue_date->toDateString(),
+                $i->due_date->toDateString(),
+                $i->payment_date?->toDateString(),
+                (int) $i->issue_date->diffInDays($i->due_date),
+                $i->payment_date ? $i->days_late : '',
+                $status,
+                $row['tier'] ?? '',
+                $row['confidence'] ?? '',
+                $row['model_used'] ?? '',
+            ];
+        }
+
+        return $rows;
     }
 
     /** Everything the dashboard, the PDF and the CSV need, in one place. */
