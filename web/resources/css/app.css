@@ -96,6 +96,27 @@
 
 [x-cloak] { display: none !important; }    /* to prevent backdrop from flashing on load */
 
+
+/* Show password eye */
+.pg-eye-wrap { position: relative; }
+.pg-eye {
+    position: absolute;
+    right: 0.75rem;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    align-items: center;
+    padding: 0.25rem;
+    background: none;
+    border: none;
+    color: #7A7468;
+    cursor: pointer;
+}
+.pg-eye:hover { color: #1F3A34; }
+
+
+
+
 /* ==========================================================
    PHONES AND TABLETS ONLY (narrower than 1024px).
    Desktop is not touched by anything below.
