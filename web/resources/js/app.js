@@ -46,3 +46,56 @@ function addPasswordEyes() {
 }
 
 document.addEventListener('DOMContentLoaded', addPasswordEyes);
+
+// Live password checklist: ticks each rule as the user types (only where a new password is set)
+function setRule(item, ok) {
+    item.classList.toggle('ok', ok);
+    item.querySelector('.pg-pw-mark').textContent = ok ? '✓' : '○';
+}
+
+function addPasswordChecklist() {
+    document.querySelectorAll('input[name="password"]').forEach((input) => {
+        const form = input.form;
+        const confirm = form ? form.querySelector('input[name="password_confirmation"]') : null;
+        if (!confirm || input.dataset.checklist) {
+            return;                                  // login and delete account have no confirm box, so skip them
+        }
+        input.dataset.checklist = '1';
+
+        const rules = [
+            ['At least 8 characters', (v) => v.length >= 8],
+            ['A capital letter', (v) => /[A-Z]/.test(v)],
+            ['A small letter', (v) => /[a-z]/.test(v)],
+            ['A number', (v) => /[0-9]/.test(v)],
+            ['A symbol, like @ # ! or %', (v) => /[^A-Za-z0-9\s]/.test(v)],
+        ];
+
+        const list = document.createElement('ul');
+        list.className = 'pg-pw-rules';
+
+        const items = rules.map(([text]) => {
+            const li = document.createElement('li');
+            li.innerHTML = '<span class="pg-pw-mark">○</span>' + text;
+            list.appendChild(li);
+            return li;
+        });
+
+        const match = document.createElement('li');
+        match.innerHTML = '<span class="pg-pw-mark">○</span>Both passwords match';
+        list.appendChild(match);
+
+        (input.closest('.pg-eye-wrap') || input).insertAdjacentElement('afterend', list);
+
+        const update = () => {
+            const value = input.value;
+            rules.forEach(([, test], i) => setRule(items[i], test(value)));
+            setRule(match, value.length > 0 && value === confirm.value);
+        };
+
+        input.addEventListener('input', update);
+        confirm.addEventListener('input', update);
+        update();
+    });
+}
+
+document.addEventListener('DOMContentLoaded', addPasswordChecklist);

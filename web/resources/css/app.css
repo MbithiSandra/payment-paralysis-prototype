@@ -115,7 +115,23 @@
 .pg-eye:hover { color: #1F3A34; }
 
 
+/* Live password checklist */
+.pg-pw-rules {
+    margin-top: 0.5rem;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.2rem 0.75rem;
+    font-size: 0.75rem;
+    color: #7A7468;
+    list-style: none;
+    padding: 0;
+}
+.pg-pw-rules li.ok { color: #2F5E47; }
+.pg-pw-mark { display: inline-block; width: 1rem; font-weight: 600; }
 
+@media (max-width: 640px) {
+    .pg-pw-rules { grid-template-columns: 1fr; }
+}
 
 /* ==========================================================
    PHONES AND TABLETS ONLY (narrower than 1024px).
