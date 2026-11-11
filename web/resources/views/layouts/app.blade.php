@@ -71,7 +71,7 @@
     <div class="flex-1 min-w-0">
         <div class="lg:hidden flex items-center gap-3 px-4 py-3" style="border-bottom:1px solid var(--pg-line)">
             <button @click="open = true" class="text-xl leading-none">&#9776;</button>
-            <span class="font-semibold"></span>
+                        <span class="font-semibold">SME Credit Screening</span>
         </div>
 
                 @unless (request()->routeIs('dashboard'))

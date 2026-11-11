@@ -95,3 +95,52 @@
 .pg-side-link--muted:hover   { background: transparent; color: #6F9289; }
 
 [x-cloak] { display: none !important; }    /* to prevent backdrop from flashing on load */
+
+/* ==========================================================
+   PHONES AND TABLETS ONLY (narrower than 1024px).
+   Desktop is not touched by anything below.
+   ========================================================== */
+@media (max-width: 1023px) {
+
+    /* the page itself never scrolls sideways */
+    html, body { overflow-x: hidden; }
+
+    /* wide tables scroll sideways inside their card, so every column is still there */
+    .pg-table {
+        display: block;
+        width: 100%;
+        overflow-x: auto;
+        white-space: nowrap;
+        -webkit-overflow-scrolling: touch;
+    }
+    .pg-card.overflow-hidden { overflow: visible; }
+
+    /* slightly less padding so content gets more room */
+    .pg-card.p-7, .pg-card-dark.p-7 { padding: 1.25rem; }
+    .pg-card .px-7 { padding-left: 1.25rem; padding-right: 1.25rem; }
+    .pg-card .mx-7 { margin-left: 1.25rem; margin-right: 1.25rem; }
+    .pg-card.p-10 { padding: 1.75rem; }
+}
+
+@media (max-width: 640px) {
+
+    /* headings and big numbers shrink a little so they fit */
+    .pg-display.text-5xl { font-size: 2.25rem; line-height: 1.1; }
+    .pg-display.text-4xl { font-size: 1.875rem; line-height: 1.15; }
+    .pg-display.text-3xl { font-size: 1.6rem; line-height: 1.2; }
+
+    /* page headers: buttons and filters line up on the left under the title */
+    header .items-end { align-items: flex-start; }
+    header form { width: 100%; }
+    header input[type="date"] { flex: 1 1 140px; min-width: 0; }
+
+    /* search boxes take the full width, the filter and buttons go underneath */
+    .min-w-\[220px\] { min-width: 100%; }
+
+    /* the three figures inside the green dashboard card stay readable */
+    .pg-card-dark .grid-cols-3 { gap: 0.75rem; }
+    .pg-card-dark .grid-cols-3 .text-xl { font-size: 1.05rem; }
+
+    /* the risk reason bars move under the sentence instead of squeezing it */
+    .pg-card li .w-28 { width: 100%; }
+}
