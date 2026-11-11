@@ -38,14 +38,29 @@ class InvoiceController extends Controller
         ];
     }
 
-    public function index()
+            public function index(Request $request)
     {
+        $search = trim((string) $request->query('q', ''));
+        $status = $request->query('status', '');
+        $today  = today()->toDateString();
+
         $invoices = Invoice::whereIn('client_code', $this->clientCodes())
             ->with('client')
+            ->when($search !== '', function ($q) use ($search) {
+                $q->where(function ($w) use ($search) {
+                    $w->where('invoice_number', 'ilike', "%{$search}%")
+                      ->orWhereHas('client', fn ($c) => $c->where('client_name', 'ilike', "%{$search}%"));
+                });
+            })
+            ->when($status === 'on_time', fn ($q) => $q->whereNotNull('payment_date')->whereColumn('payment_date', '<=', 'due_date'))
+            ->when($status === 'late', fn ($q) => $q->whereNotNull('payment_date')->whereColumn('payment_date', '>', 'due_date'))
+            ->when($status === 'outstanding', fn ($q) => $q->whereNull('payment_date')->where('due_date', '>=', $today))
+            ->when($status === 'overdue', fn ($q) => $q->whereNull('payment_date')->where('due_date', '<', $today))
             ->orderByDesc('issue_date')
-            ->paginate(20);
+            ->paginate(20)
+            ->withQueryString();
 
-        return view('invoices.index', compact('invoices'));
+        return view('invoices.index', compact('invoices', 'search', 'status'));
     }
 
     public function create()

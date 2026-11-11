@@ -15,11 +15,17 @@
     </div>
 
     <div>
-        <x-input-label for="sector" value="Sector" />
-        <x-text-input id="sector" name="sector" type="text" class="block mt-1 w-full"
-                      :value="old('sector', $client->sector ?? '')" placeholder="e.g. Retail" />
-        <x-input-error :messages="$errors->get('sector')" class="mt-2" />
-    </div>
+    <x-input-label for="sector" value="Sector" />
+    <select id="sector" name="sector" required
+            class="block mt-1 w-full rounded-xl text-sm"
+            style="border:1px solid var(--pg-line); background:#fff; padding:10px 14px">
+        <option value="">Choose a sector</option>
+        @foreach (\App\Models\Client::SECTORS as $s)
+            <option value="{{ $s }}" @selected(old('sector', isset($client) ? $client->sector : '') === $s)>{{ $s }}</option>
+        @endforeach
+    </select>
+    <x-input-error :messages="$errors->get('sector')" class="mt-2" />
+</div>
 
     <div>
     <x-input-label for="years_in_operation" value="Years in operation" />

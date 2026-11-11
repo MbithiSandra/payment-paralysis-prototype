@@ -14,6 +14,26 @@
 
     <div class="pb-14 pt-8 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-5">
         @include('partials.status')
+        
+                <form method="GET" action="{{ route('invoices.index') }}" class="pg-card p-5 flex flex-wrap items-center gap-3">
+            <input type="text" name="q" value="{{ $search }}" placeholder="Search by client or invoice number"
+                   class="flex-1 min-w-[220px] rounded-xl text-sm"
+                   style="border:1px solid var(--pg-line); background:#fff; padding:10px 14px">
+            <select name="status" class="rounded-xl text-sm"
+                    style="border:1px solid var(--pg-line); background:#fff; padding:10px 14px">
+                <option value="">All invoices</option>
+                <option value="on_time" @selected($status === 'on_time')>Paid on time</option>
+                <option value="late" @selected($status === 'late')>Paid late</option>
+                <option value="outstanding" @selected($status === 'outstanding')>Outstanding</option>
+                <option value="overdue" @selected($status === 'overdue')>Overdue</option>
+            </select>
+            <button type="submit" class="pg-btn">Search</button>
+            @if ($search !== '' || $status !== '')
+                <a href="{{ route('invoices.index') }}" class="pg-chip">Clear</a>
+            @endif
+            <span class="text-xs text-[color:var(--pg-muted)] ml-auto">{{ $invoices->total() }} {{ Str::plural('invoice', $invoices->total()) }}</span>
+        </form>
+
 
         <div class="pg-card overflow-hidden">
             <table class="min-w-full pg-table">

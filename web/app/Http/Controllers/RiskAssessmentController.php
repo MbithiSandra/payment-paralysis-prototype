@@ -145,10 +145,13 @@ class RiskAssessmentController extends Controller
             }
         }
 
-        if ($rows) {
-            $best = min(array_column($rows, 'confidence'));
+                    if ($rows) {
+            $values = array_column($rows, 'confidence');
+            $best   = min($values);
+            $differ = (max($values) - $best) >= 0.5;      // only name a winner if the options really differ
+
             foreach ($rows as $i => $row) {
-                $rows[$i]['best'] = $row['confidence'] == $best;
+                $rows[$i]['best'] = $differ && $row['confidence'] == $best;
             }
         }
 

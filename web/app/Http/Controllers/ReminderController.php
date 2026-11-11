@@ -51,8 +51,7 @@ class ReminderController extends Controller
                 'confidence' => $result['confidence'],
                 'overdue'    => $overdue,
                 'days'       => $days,
-                'english'    => $this->english($name, $business, $inv, $overdue),
-                'swahili'    => $this->swahili($name, $business, $inv, $overdue),
+                'english'    => $this->message($name, $business, $inv, $overdue),
                 'phone'      => $this->phone($client->phone),
             ];
         }
@@ -60,7 +59,8 @@ class ReminderController extends Controller
         return view('reminders.index', compact('rows'));
     }
 
-    private function english(string $name, string $business, Invoice $inv, bool $overdue): string
+    /** The reminder text, polite before the due date and firmer once it has passed. */
+    private function message(string $name, string $business, Invoice $inv, bool $overdue): string
     {
         $amount = 'KES ' . number_format($inv->amount, 2);
         $date   = $inv->due_date->format('d M Y');
@@ -70,24 +70,14 @@ class ReminderController extends Controller
             : "Hello {$name}, this is a friendly reminder from {$business} that invoice {$inv->invoice_number} for {$amount} is due on {$date}. Thank you for your continued business.";
     }
 
-    private function swahili(string $name, string $business, Invoice $inv, bool $overdue): string
-    {
-        $amount = 'KES ' . number_format($inv->amount, 2);
-        $date   = $inv->due_date->format('d/m/Y');
-
-        return $overdue
-            ? "Habari {$name}, huyu ni {$business}. Ankara {$inv->invoice_number} ya {$amount} ilipaswa kulipwa tarehe {$date} na bado haijalipwa. Tafadhali tujulishe lini tutarajie malipo. Asante."
-            : "Habari {$name}, huu ni ukumbusho wa kirafiki kutoka {$business} kwamba ankara {$inv->invoice_number} ya {$amount} inapaswa kulipwa tarehe {$date}. Asante kwa ushirikiano wako.";
-    }
-
     /** 0712 345 678 becomes 254712345678 for WhatsApp. */
     private function phone(?string $raw): ?string
     {
         $digits = preg_replace('/\D/', '', (string) $raw);
 
         return match (true) {
-            strlen($digits) === 10 && str_starts_with($digits, '0')   => '254' . substr($digits, 1),
-            strlen($digits) === 12 && str_starts_with($digits, '254') => $digits,
+            strlen($digits) === 10 && str_starts_with($digits, '0')    => '254' . substr($digits, 1),
+            strlen($digits) === 12 && str_starts_with($digits, '254')  => $digits,
             strlen($digits) === 9  && in_array($digits[0], ['7', '1']) => '254' . $digits,
             default => null,
         };

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Client;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use App\Services\RiskAssessmentService;
 use Illuminate\Support\Facades\Cache;
 
@@ -27,29 +28,36 @@ class ClientController extends Controller
         return $code;
     }
 
-    private function rules(): array
+        private function rules(): array
     {
         return [
-            'client_name'             => ['required', 'string', 'max:255'],
-            'client_kra_pin'          => ['nullable', 'string', 'max:20'],
-            'contact_person'          => ['nullable', 'string', 'max:255'],
-            'phone'                   => ['nullable', 'string', 'max:20'],
-            'email'                   => ['nullable', 'email', 'max:255'],
-            'sector'                  => ['nullable', 'string', 'max:255'], 
-            'employees'               => ['nullable', 'integer', 'min:0'],
-            'years_in_operation' => ['nullable', 'numeric', 'min:0', 'max:99'],
+            'client_name'        => ['required', 'string', 'max:255'],
+            'client_kra_pin'     => ['nullable', 'string', 'max:20'],
+            'contact_person'     => ['nullable', 'string', 'max:255'],
+            'phone'              => ['nullable', 'string', 'max:20'],
+            'email'              => ['nullable', 'email', 'max:255'],
+            'sector'             => ['required', Rule::in(Client::SECTORS)],
             'employees'          => ['nullable', 'integer', 'min:1', 'max:250'],
+            'years_in_operation' => ['nullable', 'numeric', 'min:0', 'max:99'],
         ];
     }
 
-    public function index()
+        public function index(Request $request)
     {
+        $search = trim((string) $request->query('q', ''));
+        $sector = $request->query('sector', '');
+
         $clients = $this->sme()->clients()
             ->withCount('invoices')
+            ->when($search !== '', fn ($q) => $q->where(fn ($w) => $w
+                ->where('client_name', 'ilike', "%{$search}%")
+                ->orWhere('client_code', 'ilike', "%{$search}%")))
+            ->when($sector !== '', fn ($q) => $q->where('sector', $sector))
             ->orderBy('client_name')
-            ->paginate(15);
+            ->paginate(15)
+            ->withQueryString();
 
-        return view('clients.index', compact('clients'));
+        return view('clients.index', compact('clients', 'search', 'sector'));
     }
 
     public function create()

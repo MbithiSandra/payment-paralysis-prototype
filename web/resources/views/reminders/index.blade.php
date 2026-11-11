@@ -11,7 +11,7 @@
     <div class="pb-14 pt-8 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 space-y-5">
 
         @forelse ($rows as $row)
-            <div class="pg-card p-7" x-data="{ copied: '' }">
+            <div class="pg-card p-7" x-data="{ copied: false }">
                 <div class="flex flex-wrap items-start justify-between gap-4">
                     <div>
                         <p class="font-semibold text-lg">{{ $row['client']->client_name }}</p>
@@ -33,23 +33,19 @@
                     </div>
                 </div>
 
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-5">
-                    @foreach (['english' => 'English', 'swahili' => 'Kiswahili'] as $lang => $label)
-                        <div class="pg-tile {{ $lang === 'english' ? 'pg-tile--sand' : 'pg-tile--sage' }}">
-                            <p class="pg-label">{{ $label }}</p>
-                            <p class="text-sm mt-2 leading-relaxed" x-ref="{{ $lang }}">{{ $row[$lang] }}</p>
-                            <div class="flex flex-wrap items-center gap-2 mt-4">
-                                <button type="button" class="pg-chip"
-                                        @click="navigator.clipboard.writeText($refs.{{ $lang }}.innerText); copied = '{{ $lang }}'; setTimeout(() => copied = '', 2000)">
-                                    <span x-text="copied === '{{ $lang }}' ? 'Copied' : 'Copy'"></span>
-                                </button>
-                                @if ($row['phone'])
-                                    <a href="https://wa.me/{{ $row['phone'] }}?text={{ rawurlencode($row[$lang]) }}"
-                                       target="_blank" class="pg-chip">WhatsApp</a>
-                                @endif
-                            </div>
-                        </div>
-                    @endforeach
+                <div class="pg-tile pg-tile--sand mt-5">
+                    <p class="pg-label">Reminder message</p>
+                    <p class="text-sm mt-2 leading-relaxed" x-ref="message">{{ $row['english'] }}</p>
+                    <div class="flex flex-wrap items-center gap-2 mt-4">
+                        <button type="button" class="pg-chip"
+                                @click="navigator.clipboard.writeText($refs.message.innerText); copied = true; setTimeout(() => copied = false, 2000)">
+                            <span x-text="copied ? 'Copied' : 'Copy'"></span>
+                        </button>
+                        @if ($row['phone'])
+                            <a href="https://wa.me/{{ $row['phone'] }}?text={{ rawurlencode($row['english']) }}"
+                               target="_blank" class="pg-chip">WhatsApp</a>
+                        @endif
+                    </div>
                 </div>
 
                 @unless ($row['phone'])

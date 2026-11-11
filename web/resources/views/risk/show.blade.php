@@ -57,37 +57,98 @@
                 <p class="pg-label">Recommended action</p>
                 <p class="mt-3 text-[15px] leading-relaxed">{{ $assessment['recommendation'] }}</p>
                 @if ($assessment['medium_floor_applied'])
-                    <p class="text-xs text-[color:var(--pg-muted)] mt-4">
-                        Raised to Medium because this client has no settled invoices yet.
-                    </p>
+                                       @if (collect($alternatives)->contains('best', true))
+                        <p class="text-xs text-[color:var(--pg-muted)] px-7 py-5">
+                            Use this to agree terms the client can keep. A shorter window or a smaller first order often brings the risk down.
+                        </p>
+                    @else
+                        <div class="pg-tile pg-tile--sand text-sm mx-7 mb-6 mt-3">
+                            Changing the amount or the days makes little difference for this client. The risk comes from how they
+                            have paid before, so protect yourself another way, for example a deposit or payment on delivery.
+                        </div>
+                    @endif
                 @endif
             </div>
         </div>
 
         {{-- Why --}}
-        <div class="pg-card overflow-hidden">
-            <div class="px-7 pt-6 pb-2">
-                <h2 class="pg-display text-xl">Why this tier</h2>
-                <p class="text-sm text-[color:var(--pg-muted)] mt-1">SHAP feature contributions</p>
-            </div>
-            <table class="min-w-full pg-table">
-                <thead><tr><th>Factor</th><th class="text-right">Value</th><th>Effect</th></tr></thead>
-                <tbody>
+                {{-- Why --}}
+        @php
+            $sectors = [11 => 'Agriculture', 21 => 'Mining and quarrying', 22 => 'Utilities',
+                23 => 'Construction', 31 => 'Manufacturing', 42 => 'Wholesale', 44 => 'Retail',
+                48 => 'Transport and logistics', 51 => 'Information and technology',
+                52 => 'Financial services', 53 => 'Real estate', 54 => 'Professional services',
+                56 => 'Administrative and support services', 61 => 'Education',
+                62 => 'Health services', 71 => 'Arts and recreation', 72 => 'Hospitality',
+                81 => 'Other services'];
+
+            $days = function ($v, $word) {
+                $n = abs(round($v, 1));
+                $n = $n == (int) $n ? (int) $n : $n;
+                if ($v < 0) return $n < 1 ? "less than a day early" : "{$n} " . \Illuminate\Support\Str::plural('day', $n) . " early";
+                if ($v > 0) return $n < 1 ? "less than a day late" : "{$n} " . \Illuminate\Support\Str::plural('day', $n) . " late";
+                return "on the due date";
+            };
+
+            $say = function ($r) use ($sectors, $days) {
+                $v = $r['value'];
+                $pct = round($v * 100);
+                return match ($r['feature']) {
+                    'prior_avg_days_late'    => 'On average they pay ' . $days($v, 'avg'),
+                    'prior_max_days_late'    => 'Their worst payment was ' . $days($v, 'max'),
+                    'last_days_late'         => 'They paid their most recent invoice ' . $days($v, 'last'),
+                    'prior_late_share'       => $pct == 0 ? 'None of their past invoices were paid late'
+                                                          : "{$pct}% of their past invoices were paid late",
+                    'prior_early_share'      => $pct == 0 ? 'They have never paid more than 3 days early'
+                                                          : "{$pct}% of their past invoices were paid more than 3 days early",
+                    'last3_late_share'       => round($v * 3) . ' of their last 3 invoices were paid late',
+                    'prior_avg_amount'       => 'Their usual invoice is about KES ' . number_format($v),
+                    'amount_vs_avg'          => $v >= 1.2 ? 'This amount is ' . round($v, 1) . ' times bigger than usual'
+                                              : ($v <= 0.8 ? 'This amount is smaller than usual' : 'This amount is close to their usual'),
+                    'loanamount'             => 'This credit is KES ' . number_format($v),
+                    'termdays'               => 'They get ' . (int) $v . ' days to pay',
+                    'prior_count'            => 'They have ' . (int) $v . ' earlier ' . \Illuminate\Support\Str::plural('invoice', (int) $v),
+                    'prior_settled'          => (int) $v . ' of their invoices are already paid',
+                    'days_since_last_closed' => 'Their last payment was ' . (int) $v . ' ' . \Illuminate\Support\Str::plural('day', (int) $v) . ' before this credit',
+                    'relationship_days'      => 'You have traded with them for about ' . max(1, round($v / 30)) . ' ' . \Illuminate\Support\Str::plural('month', max(1, round($v / 30))),
+                    'month'                  => 'The credit is given in ' . \Illuminate\Support\Carbon::create(null, (int) $v, 1)->format('F'),
+                    'sector'                 => 'They are in the ' . ($sectors[(int) $v] ?? 'Other services') . ' sector',
+                    'is_new_business'        => $v ? 'The business is under two years old' : 'The business has been running for two years or more',
+                    'size_band'              => 'They have ' . (['under 5 staff', '5 to 20 staff', '21 to 50 staff', 'over 50 staff'][(int) $v] ?? 'an unknown number of staff'),
+                    default                  => $r['label'],
+                };
+            };
+
+            $biggest = max(array_map(fn ($r) => abs($r['impact']), $assessment['explanation']) ?: [1]);
+        @endphp
+
+        <div class="pg-card p-7">
+            <h2 class="pg-display text-xl">Why this rating</h2>
+            <p class="text-sm text-[color:var(--pg-muted)] mt-1">
+                The main reasons behind this result, strongest first
+            </p>
+
+            <ul class="mt-5 space-y-4">
                 @foreach ($assessment['explanation'] as $reason)
-                    <tr>
-                        <td>{{ $reason['label'] }}</td>
-                        <td class="text-right">{{ round($reason['value'], 2) }}</td>
-                        <td>
-                            <span class="pg-pill {{ $reason['impact'] > 0 ? 'pg-pill--high' : 'pg-pill--low' }}">
-                                {{ $reason['direction'] }}
-                            </span>
-                        </td>
-                    </tr>
+                    @php
+                        $up    = $reason['impact'] > 0;
+                        $width = max(6, round(abs($reason['impact']) / $biggest * 100));
+                    @endphp
+                    <li class="flex flex-wrap items-center gap-x-4 gap-y-2">
+                        <span class="pg-pill {{ $up ? 'pg-pill--high' : 'pg-pill--low' }} shrink-0" style="min-width:104px; text-align:center">
+                            {{ $up ? 'Raises risk' : 'Lowers risk' }}
+                        </span>
+                        <span class="flex-1 min-w-[220px] text-[15px]">{{ $say($reason) }}</span>
+                        <span class="w-28 h-2 rounded-full shrink-0" style="background:#EFE8DC">
+                            <span class="block h-2 rounded-full"
+                                  style="width:{{ $width }}%; background:{{ $up ? '#C98574' : '#8FBFA6' }}"></span>
+                        </span>
+                    </li>
                 @endforeach
-                </tbody>
-            </table>
-            <p class="text-xs text-[color:var(--pg-muted)] px-7 py-5">
-                These factors are linked to late payment in the training data. They do not prove cause.
+            </ul>
+
+            <p class="text-xs text-[color:var(--pg-muted)] mt-6">
+                These reasons come from patterns in past payment records. They show what is linked to late payment, not what causes it.
             </p>
         </div>
 

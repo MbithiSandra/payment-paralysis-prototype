@@ -139,6 +139,15 @@ class InvoiceImportController extends Controller
                 elseif ($issue && $paid->lt($issue)) { $bad[] = 'payment date is before the issue date'; }
                 elseif ($paid->gt($today))        { $bad[] = 'payment date is in the future'; }
             }
+                        $sector = $d['sector'] ?? '';
+            if ($sector !== '') {
+                $match = collect(Client::SECTORS)->first(fn ($s) => strcasecmp($s, $sector) === 0);
+                if ($match) {
+                    $sector = $match;                    // fixes capital letters, e.g. "retail" becomes "Retail"
+                } else {
+                    $bad[] = 'sector "' . $sector . '" is not on the list';
+                }
+            }
 
             if ($name !== '' && $number !== '') {
                 $key = Str::lower($name) . '|' . Str::lower($number);
@@ -152,7 +161,7 @@ class InvoiceImportController extends Controller
             } else {
                 $clean[] = [
                     'name'   => $name,
-                    'sector' => $d['sector'] ?? '',
+                    'sector' => $sector,
                     'number' => $number,
                     'amount' => round((float) $amount, 2),
                     'issue'  => $issue->toDateString(),
