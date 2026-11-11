@@ -37,7 +37,7 @@ class RegisteredUserController extends Controller
             'password'      => ['required', 'confirmed', Rules\Password::defaults()],
             'business_name' => ['required', 'string', 'max:255'],
             'kra_pin'       => ['required', 'string', 'max:20', 'unique:smes,kra_pin'],
-            'sector'        => ['nullable', 'string', 'max:255'],
+            'sector' => ['required', \Illuminate\Validation\Rule::in(\App\Models\Client::SECTORS)],
         ]);
 
         $user = DB::transaction(function () use ($request) {

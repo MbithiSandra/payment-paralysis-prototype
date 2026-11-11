@@ -18,10 +18,16 @@
 
         <!-- Sector -->
         <div class="mt-4">
-            <x-input-label for="sector" :value="__('Sector')" />
-            <x-text-input id="sector" class="block mt-1 w-full" type="text" name="sector" :value="old('sector')" placeholder="e.g. Wholesale, Construction, Agribusiness" />
-            <x-input-error :messages="$errors->get('sector')" class="mt-2" />
-        </div>
+    <x-input-label for="sector" :value="__('Sector')" />
+    <select id="sector" name="sector" required
+            class="block mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+        <option value="">Choose your sector</option>
+        @foreach (\App\Models\Client::SECTORS as $s)
+            <option value="{{ $s }}" @selected(old('sector') === $s)>{{ $s }}</option>
+        @endforeach
+    </select>
+    <x-input-error :messages="$errors->get('sector')" class="mt-2" />
+</div>
 
 
         <!-- Name -->
