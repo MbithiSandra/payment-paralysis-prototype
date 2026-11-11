@@ -74,6 +74,18 @@
             <span class="font-semibold"></span>
         </div>
 
+                @unless (request()->routeIs('dashboard'))
+            @php
+                $back = url()->previous();
+                if ($back === url()->current() || ! str_starts_with($back, url('/'))) {
+                    $back = route('dashboard');
+                }
+            @endphp
+            <div class="max-w-7xl mx-auto pt-6 px-4 sm:px-6 lg:px-8">
+                <a href="{{ $back }}" class="inline-flex items-center gap-1 text-sm hover:underline"
+                   style="color:var(--pg-muted)">&larr; Back</a>
+            </div>
+        @endunless
         @isset($header)
             <header class="max-w-7xl mx-auto pt-10 px-4 sm:px-6 lg:px-8">
                 {{ $header }}
