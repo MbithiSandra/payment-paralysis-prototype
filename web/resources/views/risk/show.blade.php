@@ -57,7 +57,7 @@
                 <p class="pg-label">Recommended action</p>
                 <p class="mt-3 text-[15px] leading-relaxed">{{ $assessment['recommendation'] }}</p>
                 @if ($assessment['medium_floor_applied'])
-                                       @if (collect($alternatives)->contains('best', true))
+                    @if (collect($alternatives)->contains('best', true))
                         <p class="text-xs text-[color:var(--pg-muted)] px-7 py-5">
                             Use this to agree terms the client can keep. A shorter window or a smaller first order often brings the risk down.
                         </p>
@@ -72,7 +72,6 @@
         </div>
 
         {{-- Why --}}
-                {{-- Why --}}
         @php
             $sectors = [11 => 'Agriculture', 21 => 'Mining and quarrying', 22 => 'Utilities',
                 23 => 'Construction', 31 => 'Manufacturing', 42 => 'Wholesale', 44 => 'Retail',
@@ -120,13 +119,32 @@
             };
 
             $biggest = max(array_map(fn ($r) => abs($r['impact']), $assessment['explanation']) ?: [1]);
+
+            // Accessibility: the full result as one sentence the browser can read aloud
+            $spokenReasons = collect($assessment['explanation'])->map(function ($r) use ($say) {
+                return $say($r) . ($r['impact'] > 0 ? ', which raises the risk' : ', which lowers the risk');
+            })->implode('. ');
+
+            $speakText = 'Risk tier, ' . $assessment['tier'] . '. '
+                . $assessment['confidence'] . ' per cent chance of settling late. '
+                . 'Model used, ' . $assessment['model_used'] . ' model. '
+                . 'Recommended action. ' . $assessment['recommendation'] . ' '
+                . 'The main reasons. ' . $spokenReasons . '.';
         @endphp
 
         <div class="pg-card p-7">
-            <h2 class="pg-display text-xl">Why this rating</h2>
-            <p class="text-sm text-[color:var(--pg-muted)] mt-1">
-                The main reasons behind this result, strongest first
-            </p>
+            <div class="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                    <h2 class="pg-display text-xl">Why this rating</h2>
+                    <p class="text-sm text-[color:var(--pg-muted)] mt-1">
+                        The main reasons behind this result, strongest first
+                    </p>
+                </div>
+                <button type="button" id="readAloudBtn" class="pg-chip"
+                        aria-label="Read this risk assessment aloud">
+                    🔊 Read aloud
+                </button>
+            </div>
 
             <ul class="mt-5 space-y-4">
                 @foreach ($assessment['explanation'] as $reason)
@@ -139,7 +157,7 @@
                             {{ $up ? 'Raises risk' : 'Lowers risk' }}
                         </span>
                         <span class="flex-1 min-w-[220px] text-[15px]">{{ $say($reason) }}</span>
-                        <span class="w-28 h-2 rounded-full shrink-0" style="background:#EFE8DC">
+                        <span class="w-28 h-2 rounded-full shrink-0" style="background:#EFE8DC" aria-hidden="true">
                             <span class="block h-2 rounded-full"
                                   style="width:{{ $width }}%; background:{{ $up ? '#C98574' : '#8FBFA6' }}"></span>
                         </span>
@@ -241,8 +259,8 @@
                 </div>
 
                 <div>
-                    <label class="pg-label">Reason, if you differ from the recommendation</label>
-                    <textarea name="override_reason" rows="3"
+                    <label for="override_reason" class="pg-label">Reason, if you differ from the recommendation</label>
+                    <textarea id="override_reason" name="override_reason" rows="3"
                               class="mt-2 w-full rounded-xl text-sm"
                               style="border:1px solid var(--pg-line); background:#fff; padding:12px 14px"
                               placeholder="For example, long standing client who has guaranteed payment in person">{{ old('override_reason') }}</textarea>
@@ -255,4 +273,25 @@
             </form>
         </div>
     </div>
+
+    <script>
+        document.getElementById('readAloudBtn').addEventListener('click', function () {
+            if (!('speechSynthesis' in window)) {
+                alert('This browser cannot read aloud.');
+                return;
+            }
+            if (window.speechSynthesis.speaking) {
+                window.speechSynthesis.cancel();
+                this.innerText = '🔊 Read aloud';
+                return;
+            }
+            const btn = this;
+            const speech = new SpeechSynthesisUtterance(@json($speakText));
+            speech.lang = 'en-GB';
+            speech.rate = 0.95;
+            speech.onend = function () { btn.innerText = '🔊 Read aloud'; };
+            btn.innerText = '⏹ Stop';
+            window.speechSynthesis.speak(speech);
+        });
+    </script>
 </x-app-layout>

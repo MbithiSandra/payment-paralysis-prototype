@@ -77,20 +77,17 @@
                 <div class="pg-tile pg-tile--mist inline-block self-start px-3 py-1 text-xs">CSV for Power BI</div>
                 <h2 class="pg-display text-2xl mt-4">Power BI data</h2>
                 <p class="text-sm text-[color:var(--pg-muted)] mt-2 leading-relaxed">
-                    One row per invoice issued in the period, {{ $rowsInPeriod }} {{ Str::plural('row', $rowsInPeriod) }},
-                    with each client's risk tier attached so you can build your own charts.
+                    
                 </p>
                                 <ol class="text-sm mt-4 space-y-2 list-decimal pl-5">
                     <li>Click Open in Power BI</li>
-                    <li>Power BI opens your saved report</li>
-                    <li>Click Refresh in Power BI to load the latest data</li>
+<li>The CSV downloads and Power BI opens in a new tab</li>
+<li>In Power BI, upload the downloaded CSV</li>
                 </ol>
                 <div class="mt-auto pt-6 flex flex-wrap items-center gap-2">
-                    <form method="POST" action="{{ route('reports.powerbi', request()->query()) }}">
-                        @csrf
-                        <button type="submit" class="pg-btn">Open in Power BI</button>
-                    </form>
-                    <a href="{{ route('dashboard.csv', request()->query()) }}" class="pg-chip">Download CSV</a>
+                   <a href="{{ route('dashboard.csv', request()->query()) }}"
+   onclick="window.open('https://app.powerbi.com/home', '_blank')"
+   class="pg-chip">Open in Power BI</a>
                 </div>
             </div>
         </div>

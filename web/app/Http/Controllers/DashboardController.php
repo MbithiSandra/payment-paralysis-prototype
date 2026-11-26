@@ -69,39 +69,8 @@ class DashboardController extends Controller
         }, 'powerbi-invoices-' . now()->format('Y-m-d') . '.csv', ['Content-Type' => 'text/csv; charset=UTF-8']);
     }
 
-    /** Saves the latest data for Power BI and opens the saved report on this laptop. */
-    public function openPowerBi(Request $request)
-    {
-        $data = $this->buildData($request);
-        abort_if($data['empty'], 404);
+  
 
-        $dir  = rtrim((string) config('services.powerbi.dir'), '/');
-        $file = (string) config('services.powerbi.file');
-
-        if ($dir === '' || ! is_dir($dir)) {
-            return back()->with('error', 'Power BI folder not found. Create the folder C:\PayGuard on this laptop first.');
-        }
-
-        $out = @fopen($dir . '/invoices.csv', 'w');
-        if (! $out) {
-            return back()->with('error', 'Could not save the data file. Close any program using C:\PayGuard\invoices.csv and try again.');
-        }
-        fwrite($out, "\xEF\xBB\xBF");
-        foreach ($this->powerBiRows($data) as $row) {
-            fputcsv($out, $row);
-        }
-        fclose($out);
-
-        $report = $dir . '/' . basename(str_replace('\\', '/', $file));
-        if (! file_exists($report)) {
-            return back()->with('status', 'Data saved to C:\PayGuard\invoices.csv. Build and save PayGuard.pbix in that folder once, and this button will open it.');
-        }
-
-        $powershell = '/mnt/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe';
-        exec($powershell . ' -NoProfile -Command ' . escapeshellarg("Start-Process '{$file}'") . ' > /dev/null 2>&1 &');
-
-        return back()->with('status', 'Opening Power BI with the latest data. If it was already open, click Refresh in Power BI.');
-    }
 
     /** The rows both the CSV download and the Power BI button use. */
     private function powerBiRows(array $data): array

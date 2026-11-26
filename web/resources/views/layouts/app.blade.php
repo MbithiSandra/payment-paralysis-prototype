@@ -8,6 +8,20 @@
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+
+    {{-- Accessibility: apply the saved text size before the page shows, so it does not jump --}}
+    <script>
+        (function () {
+            try {
+                var sizes = [87.5, 100, 112.5, 125, 137.5];
+                var saved = localStorage.getItem('pgTextSize');
+                if (saved !== null) {
+                    var level = Math.min(Math.max(parseInt(saved, 10), 0), sizes.length - 1);
+                    document.documentElement.style.fontSize = sizes[level] + '%';
+                }
+            } catch (e) {}
+        })();
+    </script>
 </head>
 <body class="font-sans antialiased pg-canvas">
 <div x-data="{ open: false }" class="min-h-screen lg:flex">
@@ -15,7 +29,8 @@
     {{-- Sidebar --}}
     <aside class="pg-side w-60 shrink-0 fixed inset-y-0 left-0 z-40 flex flex-col
                   transform transition-transform lg:static lg:translate-x-0"
-           :class="open ? 'translate-x-0' : '-translate-x-full'">
+           :class="open ? 'translate-x-0' : '-translate-x-full'"
+           aria-label="Main menu">
 
         <div class="flex items-center gap-3 px-6 pt-7 pb-8">
             <div class="pg-side-mark w-9 h-9 flex items-center justify-center font-bold"></div>
@@ -34,9 +49,9 @@
             <a href="{{ route('invoices.index') }}"
                class="pg-side-link {{ request()->routeIs('invoices.index') || request()->routeIs('invoices.create') || request()->routeIs('invoices.edit') ? 'pg-side-link--active' : '' }}">Invoices</a>
 
-
-                           <a href="{{ route('reminders.index') }}"
+            <a href="{{ route('reminders.index') }}"
                class="pg-side-link {{ request()->routeIs('reminders.*') ? 'pg-side-link--active' : '' }}">Reminders</a>
+
             <a href="{{ route('assess.create') }}"
                class="pg-side-link {{ request()->routeIs('assess.*') ? 'pg-side-link--active' : '' }}">Assess client</a>
 
@@ -46,7 +61,7 @@
             <a href="{{ route('decisions.index') }}"
                class="pg-side-link {{ request()->routeIs('decisions.*') || request()->routeIs('invoices.risk') ? 'pg-side-link--active' : '' }}">Assessments</a>
 
-                        <a href="{{ route('reports.index') }}"
+            <a href="{{ route('reports.index') }}"
                class="pg-side-link {{ request()->routeIs('reports.*') ? 'pg-side-link--active' : '' }}">Reports</a>
         </nav>
 
@@ -70,11 +85,11 @@
     {{-- Main --}}
     <div class="flex-1 min-w-0">
         <div class="lg:hidden flex items-center gap-3 px-4 py-3" style="border-bottom:1px solid var(--pg-line)">
-            <button @click="open = true" class="text-xl leading-none">&#9776;</button>
-                        <span class="font-semibold">SME Credit Screening</span>
+            <button @click="open = true" class="text-xl leading-none" aria-label="Open menu">&#9776;</button>
+            <span class="font-semibold">SME Credit Screening</span>
         </div>
 
-                @unless (request()->routeIs('dashboard'))
+        @unless (request()->routeIs('dashboard'))
             @php
                 $back = url()->previous();
                 if ($back === url()->current() || ! str_starts_with($back, url('/'))) {
@@ -86,6 +101,7 @@
                    style="color:var(--pg-muted)">&larr; Back</a>
             </div>
         @endunless
+
         @isset($header)
             <header class="max-w-7xl mx-auto pt-10 px-4 sm:px-6 lg:px-8">
                 {{ $header }}
@@ -95,5 +111,46 @@
         <main>{{ $slot }}</main>
     </div>
 </div>
+
+{{-- Accessibility: text size buttons on every page --}}
+{{-- Accessibility: zoom buttons on every page --}}
+<div class="fixed top-4 right-4 z-50 flex items-center gap-1 rounded-full px-2 py-1 shadow-md"
+     style="background:#1F3B35" role="group" aria-label="Zoom">
+    <button type="button" onclick="pgTextSize(-1)" aria-label="Zoom out"
+            class="px-3 py-1 rounded-full text-sm font-semibold hover:bg-white/10" style="color:#F2F7F4">
+        − Zoom out
+    </button>
+    <span aria-hidden="true" style="color:#4F7A70">|</span>
+    <button type="button" onclick="pgTextSize(0)" aria-label="Reset zoom"
+            class="px-3 py-1 rounded-full text-sm hover:bg-white/10" style="color:#B9D3CF">
+        Reset
+    </button>
+    <span aria-hidden="true" style="color:#4F7A70">|</span>
+    <button type="button" onclick="pgTextSize(1)" aria-label="Zoom in"
+            class="px-3 py-1 rounded-full text-sm font-semibold hover:bg-white/10" style="color:#F2F7F4">
+        + Zoom in
+    </button>
+</div>
+
+<script>
+    (function () {
+        var sizes = [87.5, 100, 112.5, 125, 137.5];
+        var level = 1;
+        try {
+            var saved = localStorage.getItem('pgTextSize');
+            if (saved !== null) level = Math.min(Math.max(parseInt(saved, 10), 0), sizes.length - 1);
+        } catch (e) {}
+
+        function apply() {
+            document.documentElement.style.fontSize = sizes[level] + '%';
+            try { localStorage.setItem('pgTextSize', level); } catch (e) {}
+        }
+
+        window.pgTextSize = function (step) {
+            level = step === 0 ? 1 : Math.min(Math.max(level + step, 0), sizes.length - 1);
+            apply();
+        };
+    })();
+</script>
 </body>
 </html>
